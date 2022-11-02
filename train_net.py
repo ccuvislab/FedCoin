@@ -34,6 +34,8 @@ from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
 from shutil import copyfile
 import os
 
+import logging
+
 
 def setup(args):
     """
@@ -53,6 +55,8 @@ def main(args):
 
     copyfile(args.config_file, os.path.join(cfg.OUTPUT_DIR, 'cfg.yaml'))
     copyfile('pt/modeling/roi_heads/fast_rcnn.py', os.path.join(cfg.OUTPUT_DIR, 'fast_rcnn.py'))
+    
+    
 
     if cfg.UNSUPNET.Trainer == "pt":
         Trainer = PTrainer
@@ -60,6 +64,7 @@ def main(args):
         raise ValueError("Trainer Name is not found.")
 
     if args.eval_only:
+        
         if cfg.UNSUPNET.Trainer in ["pt"]:
             model = Trainer.build_model(cfg)
             model_teacher = Trainer.build_model(cfg)

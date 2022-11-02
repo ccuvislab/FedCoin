@@ -59,7 +59,7 @@ def add_config(cfg):
     _C.UNSUPNET.TAU = [0.5, 0.5]
     _C.UNSUPNET.EFL = True
     _C.UNSUPNET.EFL_LAMBDA = [0.5, 0.5]
-
+    _C.UNSUPNET.BBOX_THRESHOLD = 0.8
     _C.UNSUPNET.MODEL_TYPE = "GUASSIAN"  # "GUASSIAN" "LAPLACE"
 
     # ---------------------------------------------------------------------------- #

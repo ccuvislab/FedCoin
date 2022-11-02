@@ -1,7 +1,7 @@
 _BASE_: "../Guassian-RCNN-VGG.yaml"
 MODEL:
   ROI_HEADS:
-    NUM_CLASSES: 1 
+    NUM_CLASSES: 8 
 SOLVER:
   LR_SCHEDULER_NAME: "WarmupMultiStepLR"
   STEPS: (30000,)
@@ -16,9 +16,9 @@ DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
   CROSS_DATASET: True
-  TRAIN_LABEL: ("VOC2007_kitti1",)
-  TRAIN_UNLABEL: ("VOC2007_citytrain1",)
-  TEST: ("VOC2007_cityval1",)
+  TRAIN_LABEL: ("VOC2007_kitti8",)
+  TRAIN_UNLABEL: ("VOC2007_bddtrain",)
+  TEST: ("VOC2007_bddval",)
 UNSUPNET:
   Trainer: "pt"
   TEACHER_UPDATE_ITER: 1
@@ -37,4 +37,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/k2c/"
+OUTPUT_DIR: "./output/k2bdd/"
