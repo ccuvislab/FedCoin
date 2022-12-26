@@ -121,19 +121,36 @@ def register_all_pascal_voc(root):
     SPLITS = [
         ("VOC2007_citytrain", 'data/VOC2007_citytrain', "train", 8),
         ("VOC2007_cityval", 'data/VOC2007_cityval', "val", 8),
-        ("VOC2007_foggytrain", 'data/VOC2007_foggytrain', "train", 8),
-        ("VOC2007_foggyval", 'data/VOC2007_foggyval', "val", 8),
         ("VOC2007_citytrain1", 'data/VOC2007_citytrain', "train", 1),
+        ("VOC2007_citytrainsmall", 'data/VOC2007_citytrain', "train_small", 1),
+
         ("VOC2007_citytrain5", 'data/VOC2007_citytrain', "train", 5),
         ("VOC2007_cityval1", 'data/VOC2007_cityval', "val", 1),
         ("VOC2007_cityval5", 'data/VOC2007_cityval', "val", 5),
+        ("VOC2007_cityvalsmall", 'data/VOC2007_cityval', "val_small", 1),
+        
+        ("VOC2007_foggytrain", 'data/VOC2007_foggytrain', "train", 8),
+        ("VOC2007_foggyval", 'data/VOC2007_foggyval', "val", 8),
+        ("VOC2007_foggytrain1", 'data/VOC2007_foggytrain', "train", 1),
+        ("VOC2007_foggytrainsmall", 'data/VOC2007_foggytrain', "train_small", 1),
+
+        ("VOC2007_foggyval1", 'data/VOC2007_foggyval', "val", 1),
        
-        ("VOC2007_bddtrain", 'data/VOC2007_bddtrain', "train", 8),
-        ("VOC2007_bddval", 'data/VOC2007_bddval', "val", 8),
+        ("VOC2007_bddtrain8", 'data/VOC2007_bddtrain', "train", 8),
+        ("VOC2007_bddval8", 'data/VOC2007_bddval', "val", 8),
+        ("VOC2007_bddtrain1", 'data/VOC2007_bddtrain', "train", 1),
+        ("VOC2007_bddval1", 'data/VOC2007_bddval', "val", 1),
+        ("VOC2007_bddvalsmall", 'data/VOC2007_bddval', "val_small", 1),
         ("VOC2007_kitti1", 'data/kitti', "train", 1),
+        ("VOC2007_kittismall", 'data/kitti', "train_small", 1),
         ("VOC2007_kitti5", 'data/kitti', "train", 5),
         ("VOC2007_kitti8", 'data/kitti', "train", 8),
         ("VOC2007_sim1", 'data/sim', "train", 1),
+        ("VOC2007_simsmall", 'data/sim', "train_small", 1),
+        
+        ("multi-ck", 'data/multi-ck', "train", 1),
+        ("multi-skf", 'data/multi-skf', "train", 1),
+
     ]
     
             

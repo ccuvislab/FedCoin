@@ -1,8 +1,7 @@
 _BASE_: "../Guassian-RCNN-VGG.yaml"
 MODEL:
   ROI_HEADS:
-    NUM_CLASSES: 1
-  WEIGHTS: "vgg16_caffe.pth"
+    NUM_CLASSES: 1 
 SOLVER:
   LR_SCHEDULER_NAME: "WarmupMultiStepLR"
   STEPS: (30000,)
@@ -17,7 +16,7 @@ DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
   CROSS_DATASET: True
-  TRAIN_LABEL: ("VOC2007_kitti1",)
+  TRAIN_LABEL: ("VOC2007_foggytrain1",)
   TRAIN_UNLABEL: ("VOC2007_citytrain1",)
   TEST: ("VOC2007_cityval1",)
 UNSUPNET:
@@ -38,4 +37,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/k2c_eval/"
+OUTPUT_DIR: "./output/f2c_1class/"

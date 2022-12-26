@@ -57,6 +57,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             instances = output["instances"].to(self._cpu_device)
             boxes = instances.pred_boxes.tensor.numpy()
             scores = instances.scores.tolist()
+            #print(scores)
             classes = instances.pred_classes.tolist()
             for box, score, cls in zip(boxes, scores, classes):
                 xmin, ymin, xmax, ymax = box
@@ -89,11 +90,14 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         )
 
         with tempfile.TemporaryDirectory(prefix="pascal_voc_eval_") as dirname:
+            #dirname="/home/superorange5/Research/ProbabilisticTeacher"
             res_file_template = os.path.join(dirname, "{}.txt")
 
             aps = defaultdict(list)  # iou -> ap per class
             for cls_id, cls_name in enumerate(self._class_names):
+                #print(cls_name)
                 lines = predictions.get(cls_id, [""])
+                #print(res_file_template.format(cls_name))
 
                 with open(res_file_template.format(cls_name), "w") as f:
                     f.write("\n".join(lines))
@@ -108,9 +112,11 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                         use_07_metric=self._is_2007,
                     )
                     aps[thresh].append(ap * 100)
+                    #print(ap*100)
 
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
+      
         ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
         return ret
 
@@ -215,6 +221,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
 
     # first load gt
     # read list of images
+    
     with PathManager.open(imagesetfile, "r") as f:
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]

@@ -37,4 +37,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/f2c/"
+OUTPUT_DIR: "./output/f2ceval/"

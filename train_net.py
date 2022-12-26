@@ -18,9 +18,12 @@ import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
+from detectron2.engine import DefaultTrainer
+from detectron2.evaluation import PascalVOCDetectionEvaluator
 
 from pt import add_config
 from pt.engine.trainer import PTrainer
+from pt.engine.trainer_pseudo import PseudoTrainer
 
 # to register
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
@@ -35,7 +38,25 @@ from shutil import copyfile
 import os
 
 import logging
+class FRCNNTrainer(DefaultTrainer):
+    """
+    We use the "DefaultTrainer" which contains pre-defined default logic for
+    standard training workflow. They may not work for you, especially if you
+    are working on a new research project. In that case you can write your
+    own training loop. You can use "tools/plain_train_net.py" as an example.
+    """
 
+    @classmethod
+    def build_evaluator(cls, cfg, dataset_name, output_folder=None):
+        if output_folder is None:
+            output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
+
+        if cfg.TEST.EVALUATOR == "COCOeval":
+            return COCOEvaluator(dataset_name, cfg, True, output_folder)
+        if cfg.TEST.EVALUATOR == "VOCeval":
+            return PascalVOCDetectionEvaluator(dataset_name)
+        else:
+            raise ValueError("Unknown test evaluator.")
 
 def setup(args):
     """
@@ -60,6 +81,12 @@ def main(args):
 
     if cfg.UNSUPNET.Trainer == "pt":
         Trainer = PTrainer
+#     elif cfg.UNSUPNET.Trainer == "pteval":
+#         Trainer = PTrainer
+    elif cfg.UNSUPNET.Trainer == "pseudo":
+        Trainer = PseudoTrainer
+    elif cfg.UNSUPNET.Trainer == "frcnn":
+        Trainer = FRCNNTrainer
     else:
         raise ValueError("Trainer Name is not found.")
 
@@ -74,6 +101,12 @@ def main(args):
                 ensem_ts_model, save_dir=cfg.OUTPUT_DIR
             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
             res = Trainer.test(cfg, ensem_ts_model.modelStudent)
+#         elif cfg.UNSUPNET.Trainer in ["pteval"]:
+#             model = Trainer.build_model(cfg)            
+#             DetectionCheckpointer(
+#                 model, save_dir=cfg.OUTPUT_DIR
+#             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
+#             res = Trainer.test(cfg, model)
         else:
             model = Trainer.build_model(cfg)
             DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(

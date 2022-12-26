@@ -2,6 +2,7 @@ data/*
 output/*
 models/*
 logs/*
+keep_experiments/*
 *.pth
 *.pkl
 core*

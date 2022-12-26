@@ -64,7 +64,7 @@ import gc
 
 
 # PTrainer
-class PTrainer(DefaultTrainer):
+class PseudoTrainer(DefaultTrainer):
     def __init__(self, cfg):
         """
         Args:
@@ -163,7 +163,6 @@ class PTrainer(DefaultTrainer):
                 self.before_train()
 
                 for self.iter in range(start_iter, max_iter):
-                    #print("iter:{} device:{}".format(self.iter, self.cfg.MODEL.DEVICE))
                     self.before_step()
                     with torch.autograd.set_detect_anomaly(True):
                         self.run_step()
@@ -177,65 +176,69 @@ class PTrainer(DefaultTrainer):
     # =====================================================
     # ================== Pseduo-labeling ==================
     # =====================================================
-    def threshold_bbox(self, proposal_bbox_inst, proposal_type="roih"):
+    #
+    def threshold_bbox(self, proposal_bbox_inst, thres=0.7, proposal_type="roih"):
         if proposal_type == "rpn":
+            # adapteacher threshold 
+            valid_map = proposal_bbox_inst.objectness_logits > thres
+
             # ------------ >all -----------
             # create instances containing boxes and gt_classes
             image_shape = proposal_bbox_inst.image_size
             new_proposal_inst = FreeInstances(image_shape)
-
+            
+            # adapteacher threshold 
             # create box
-            new_bbox_loc = proposal_bbox_inst.proposal_boxes.tensor
+            new_bbox_loc = proposal_bbox_inst.proposal_boxes.tensor[valid_map, :]
             new_boxes = Boxes(new_bbox_loc)
 
             # add boxes to instances
             new_proposal_inst.gt_boxes = new_boxes
             new_proposal_inst.objectness_logits = proposal_bbox_inst.objectness_logits
-
             # ------------ <all -----------
             # create box
-            new_bbox_loc = proposal_bbox_inst.proposal_boxes.tensor
+            new_bbox_loc = proposal_bbox_inst.proposal_boxes.tensor[valid_map, :]
             new_boxes = Boxes(new_bbox_loc)
 
             # add boxes to instances
             new_proposal_inst.pseudo_boxes = new_boxes
 
         elif proposal_type == "roih":
-
+            # adapteacher threshold valid_map
+            valid_map = proposal_bbox_inst.scores > thres
             # ------------ >all -----------
             # create instances containing boxes and gt_classes
             image_shape = proposal_bbox_inst.image_size
             new_proposal_inst = FreeInstances(image_shape)
 
-            # create box
-            # new_bbox_loc = proposal_bbox_inst.pred_boxes.tensor
-            # new_boxes = Boxes(new_bbox_loc)
-
-            # add boxes to instances
-            # new_proposal_inst.gt_boxes = new_boxes
-            # new_proposal_inst.gt_classes = proposal_bbox_inst.pred_classes
-            # new_proposal_inst.scores = proposal_bbox_inst.scores
-
             # ------------ <all -----------
-            new_bbox_loc = proposal_bbox_inst.pred_boxes.tensor
+            # adapteacher threshold valid_map
+            new_bbox_loc = proposal_bbox_inst.pred_boxes.tensor[valid_map, :]
             pseudo_boxes = Boxes(new_bbox_loc)
 
             # add boxes to instances
             new_proposal_inst.pseudo_boxes = pseudo_boxes
-            new_proposal_inst.scores_logists = proposal_bbox_inst.scores_logists
+            # adapteacher threshold valid_map
+            new_proposal_inst.scores_logists = proposal_bbox_inst.scores_logists[valid_map]
             if proposal_bbox_inst.has('boxes_sigma'):
-                new_proposal_inst.boxes_sigma = proposal_bbox_inst.boxes_sigma
+                new_proposal_inst.boxes_sigma = proposal_bbox_inst.boxes_sigma[valid_map]
 
         return new_proposal_inst
 
     def process_pseudo_label(
-            self, proposals_rpn_unsup_k, proposal_type, psedo_label_method=""
+            self, proposals_rpn_unsup_k, cur_threshold, proposal_type, psedo_label_method=""
     ):
         list_instances = []
         num_proposal_output = 0.0
         for proposal_bbox_inst in proposals_rpn_unsup_k:
-            # all
-            if psedo_label_method == "all":
+            
+            # thresholding
+            if psedo_label_method == "thresholding":
+                proposal_bbox_inst = self.threshold_bbox(
+                    proposal_bbox_inst, thres=cur_threshold, proposal_type=proposal_type
+                )
+            # all    
+            elif psedo_label_method == "all":
                 proposal_bbox_inst = self.threshold_bbox(
                     proposal_bbox_inst, proposal_type=proposal_type
                 )
@@ -292,7 +295,6 @@ class PTrainer(DefaultTrainer):
         else:
             if self.iter == self.cfg.UNSUPNET.BURN_UP_STEP:
                 # update copy the the whole model
-                #print("==============update teacher")
                 self._update_teacher_model(keep_rate=0.00)
             elif (
                     self.iter - self.cfg.UNSUPNET.BURN_UP_STEP
@@ -314,10 +316,18 @@ class PTrainer(DefaultTrainer):
                     _,
                 ) = self.model_teacher(unlabel_data_k, branch="unsup_data_weak")
 
+            print(proposals_roih_unsup_k)
+            os._exit()
             #  Pseudo-labeling
+            
+            # adapteacher threshold
+            cur_threshold = self.cfg.UNSUPNET.BBOX_THRESHOLD
+
             joint_proposal_dict = {}
+            
+            # adapteacher threshold  +cur_threshold
             pesudo_proposals_roih_unsup_k, _ = self.process_pseudo_label(
-                proposals_roih_unsup_k, "roih", "all"
+                proposals_roih_unsup_k, cur_threshold, "roih", "thresholding"
             )
             joint_proposal_dict["proposals_pseudo_roih"] = pesudo_proposals_roih_unsup_k
 
@@ -340,15 +350,17 @@ class PTrainer(DefaultTrainer):
 
             # source domain supervised loss
             # --------------------------
-            record_all_label_data, _, _, _ = self.model(
-                all_label_data, branch="supervised"
-            )
-            new_record_all_label_data = {}
-            for key in record_all_label_data.keys():
-                new_record_all_label_data[key + "_sup"] = record_all_label_data[
-                    key
-                ]
-            record_dict.update(new_record_all_label_data)
+            
+            #exp1_unsup_only :comment out
+#             record_all_label_data, _, _, _ = self.model(
+#                 all_label_data, branch="supervised"
+#             )
+#             new_record_all_label_data = {}
+#             for key in record_all_label_data.keys():
+#                 new_record_all_label_data[key + "_sup"] = record_all_label_data[
+#                     key
+#                 ]
+#             record_dict.update(new_record_all_label_data)
 
             # target domain unsupervised loss
             # --------------------------
@@ -361,7 +373,8 @@ class PTrainer(DefaultTrainer):
                     key
                 ]
             record_dict.update(new_record_all_unlabel_data)
-            record_dict.update(new_record_all_label_data)
+            #exp1_unsup_only :comment out
+#             record_dict.update(new_record_all_label_data)
 
             # weight losses
             loss_dict = {}
@@ -477,12 +490,18 @@ class PTrainer(DefaultTrainer):
         Args:
             resume (bool): whether to do resume or not
         """
+        logger = logging.getLogger(__name__)
+        
+        logger.info("---------------in resume_or_load------------")
         if resume:
             checkpoint = self.checkpointer.load(
                 self.cfg.MODEL.WEIGHTS, checkpointables=['model', 'optimizer', 'scheduler']
                 # self.cfg.MODEL.WEIGHTS, checkpointables=['model', 'optimizer', 'scheduler', 'iteration']
             )
         else:
+            
+            logger.info("$$$$ load checkpoint {}".format(self.cfg.MODEL.WEIGHTS))
+            
             checkpoint = self.checkpointer.load(
                 self.cfg.MODEL.WEIGHTS, checkpointables=[]
             )
@@ -493,8 +512,11 @@ class PTrainer(DefaultTrainer):
         if isinstance(self.model, DistributedDataParallel):
             # broadcast loaded data/model from the first rank, because other
             # machines may not have access to the checkpoint file
-            if TORCH_VERSION >= (1, 7):
-                self.model._sync_params_and_buffers()
+            #if TORCH_VERSION >= (1, 7):
+                #if comm.get_world_size() > 1: # if mGPU
+                #    self.model.module._sync_params_and_buffers()
+                    
+                #self.model._sync_params_and_buffers()
             self.start_iter = comm.all_gather(self.start_iter)[0]
 
     def build_hooks(self):

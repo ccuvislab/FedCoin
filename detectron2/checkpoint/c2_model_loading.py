@@ -234,7 +234,7 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
     else:
         original_keys = {x: x for x in ckpt_state_dict.keys()}
     ckpt_keys = sorted(ckpt_state_dict.keys())
-
+    
     def match(a, b):
         # Matched ckpt_key should be a complete (starts with '.') suffix.
         # For example, roi_heads.mesh_head.whatever_conv1 does not match conv1,
@@ -243,8 +243,10 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
 
     # get a matrix of string matches, where each (i, j) entry correspond to the size of the
     # ckpt_key string, if it matches
+
     match_matrix = [len(j) if match(i, j) else 0 for i in model_keys for j in ckpt_keys]
     match_matrix = torch.as_tensor(match_matrix).view(len(model_keys), len(ckpt_keys))
+    #print(match_matrix)
     # use the matched one with longest size in case of multiple matches
     max_match_size, idxs = match_matrix.max(1)
     # remove indices that correspond to no-match
@@ -254,7 +256,13 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
     # matched_pairs (matched checkpoint key --> matched model key)
     matched_keys = {}
     result_state_dict = {}
+#    print(idxs)
     for idx_model, idx_ckpt in enumerate(idxs.tolist()):
+#         print("idx_model={}".format(idx_model))
+#         print("idx_ckpt={}".format(idx_ckpt))
+#         print("matched_keys")
+#         print(matched_keys)
+        #print("key_ckpt={}".format(ckpt_keys[idx_ckpt]))
         if idx_ckpt == -1:
             continue
         key_model = model_keys[idx_model]
@@ -278,6 +286,7 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
         assert key_model not in result_state_dict
         result_state_dict[key_model] = value_ckpt
         if key_ckpt in matched_keys:  # already added to matched_keys
+            
             logger.error(
                 "Ambiguity found for {} in checkpoint!"
                 "It matches at least two keys in the model ({} and {}).".format(

@@ -37,6 +37,8 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
 
     # Needs to read many small annotation files. Makes sense at local
     annotation_dirname = PathManager.get_local_path(os.path.join(dirname, "Annotations/"))
+
+
     dicts = []
     for fileid in fileids:
         anno_file = os.path.join(annotation_dirname, fileid + ".xml")
@@ -56,7 +58,7 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
         #print(class_names)
         
 
-
+    
         for obj in tree.findall("object"):
             cls = obj.find("name").text
             # We include "difficult" samples in training.
@@ -64,7 +66,7 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
             # difficult = int(obj.find("difficult").text)
             # if difficult == 1:
             # continue
-            #print(cls)
+            
             if (cls in class_names):
                 bbox = obj.find("bndbox")
                 bbox = [float(bbox.find(x).text) for x in ["xmin", "ymin", "xmax", "ymax"]]
@@ -77,6 +79,9 @@ def load_voc_instances(dirname: str, split: str, class_names: Union[List[str], T
                 instances.append(
                     {"category_id": class_names.index(cls), "bbox": bbox, "bbox_mode": BoxMode.XYXY_ABS}
                 )
+#                 if dirname=='data/VOC2007_citytrain':
+#                     print("{} index ={}".format(cls,class_names.index(cls)))
+           
         r["annotations"] = instances
         dicts.append(r)
     return dicts
