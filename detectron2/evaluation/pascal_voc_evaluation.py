@@ -90,8 +90,10 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         )
 
         with tempfile.TemporaryDirectory(prefix="pascal_voc_eval_") as dirname:
-            #dirname="/home/superorange5/Research/ProbabilisticTeacher"
+            dirname="/home/superorange5/Research/ProbabilisticTeacher/tmp/skf2c_sim10k_origin"
             res_file_template = os.path.join(dirname, "{}.txt")
+            #print(res_file_template)
+
 
             aps = defaultdict(list)  # iou -> ap per class
             for cls_id, cls_name in enumerate(self._class_names):
@@ -234,7 +236,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
     # extract gt objects for this class
     class_recs = {}
     npos = 0
-    for imagename in imagenames:
+    for imagename in imagenames:        
         R = [obj for obj in recs[imagename] if obj["name"] == classname]
         bbox = np.array([x["bbox"] for x in R])
         difficult = np.array([x["difficult"] for x in R]).astype(np.bool)
@@ -286,23 +288,28 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
                 - inters
             )
 
-            overlaps = inters / uni
+            overlaps = inters / uni            
             ovmax = np.max(overlaps)
             jmax = np.argmax(overlaps)
 
         if ovmax > ovthresh:
             if not R["difficult"][jmax]:
                 if not R["det"][jmax]:
+                    
+                    #print("TP idx={}".format(jmax))
                     tp[d] = 1.0
                     R["det"][jmax] = 1
                 else:
                     fp[d] = 1.0
+                    #print("FP idx={}".format(jmax))
         else:
             fp[d] = 1.0
 
     # compute precision recall
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
+    #print("fp={}, tp={}".format(fp[-1],tp[-1]))
+    
     rec = tp / float(npos)
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth
