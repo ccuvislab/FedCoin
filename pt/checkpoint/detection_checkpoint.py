@@ -24,6 +24,7 @@ from fvcore.common.checkpoint import _strip_prefix_if_present, _IncompatibleKeys
 class DetectionTSCheckpointer(DetectionCheckpointer):
     def _load_model(self, checkpoint):
         if checkpoint.get("__author__", None) == "Caffe2":
+            
             # pretrained model weight: only update student model
             if checkpoint.get("matching_heuristics", False):
                 self._convert_ndarray_to_tensor(checkpoint["model"])
@@ -49,7 +50,7 @@ class DetectionTSCheckpointer(DetectionCheckpointer):
                         pass
             return incompatible
 
-        else:  # whole model
+        else:  # whole model            
             if checkpoint.get("matching_heuristics", False):
                 self._convert_ndarray_to_tensor(checkpoint["model"])
                 # convert weights by name-matching heuristics

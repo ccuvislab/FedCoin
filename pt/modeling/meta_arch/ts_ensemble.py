@@ -17,6 +17,7 @@ from torch.nn.parallel import DataParallel, DistributedDataParallel
 import torch.nn as nn
 
 
+
 class EnsembleTSModel(nn.Module):
     def __init__(self, modelTeacher, modelStudent):
         super(EnsembleTSModel, self).__init__()
@@ -28,3 +29,5 @@ class EnsembleTSModel(nn.Module):
 
         self.modelTeacher = modelTeacher
         self.modelStudent = modelStudent
+
+

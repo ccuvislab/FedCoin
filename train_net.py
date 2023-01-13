@@ -23,6 +23,7 @@ from detectron2.evaluation import PascalVOCDetectionEvaluator
 
 from pt import add_config
 from pt.engine.trainer import PTrainer
+from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.engine.trainer_pseudo import PseudoTrainer
 
 # to register
@@ -83,6 +84,8 @@ def main(args):
         Trainer = PTrainer
 #     elif cfg.UNSUPNET.Trainer == "pteval":
 #         Trainer = PTrainer
+    elif cfg.UNSUPNET.Trainer == "sourceonly":
+        Trainer= PTrainer_sourceonly
     elif cfg.UNSUPNET.Trainer == "pseudo":
         Trainer = PseudoTrainer
     elif cfg.UNSUPNET.Trainer == "frcnn":

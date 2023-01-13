@@ -32,4 +32,5 @@ def add_config(cfg):
     # ---------------------------------------------------------------------------- #
     _C.FEDSET.DATASET_LIST = ("VOC2007_citytrain","VOC2007_kitti1")
     _C.FEDSET.ROUND = 10
+    _C.FEDSET.THREAD=False
    

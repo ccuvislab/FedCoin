@@ -15,14 +15,15 @@ SOLVER:
 DATALOADER:
   NUM_WORKERS: 2
 FEDSET:
+  THREAD: True
   ROUND: 3
   DATASET_LIST: ("VOC2007_kitti1","VOC2007_citytrain1")  
 DATASETS:
   CROSS_DATASET: True
-  TRAIN_UNLABEL: ("VOC2007_bddtrain1",)
+#  TRAIN_UNLABEL: ("VOC2007_bddtrain1",)
   TEST: ("VOC2007_bddval1",)
 UNSUPNET:
-  Trainer: "pt"
+  Trainer: "sourceonly"
   TEACHER_UPDATE_ITER: 1
   BURN_UP_STEP: 0
   EMA_KEEP_RATE: 0.9996

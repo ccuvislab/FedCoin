@@ -37,6 +37,7 @@ from detectron2.data.build import (
 )
 from pt.data.common import (
     AspectRatioGroupedSemiSupDatasetTwoCrop,
+    AspectRatioGroupedDatasetTwoCrop,
 )
 
 
@@ -102,6 +103,93 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     )
     return data_loader
 
+# build dataloader with target data only
+def build_detection_targetonly_loader_two_crops(cfg, mapper=None):
+    if cfg.DATASETS.CROSS_DATASET:  # cross-dataset (e.g., coco-additional)        
+        unlabel_dicts = get_detection_dataset_dicts(
+            cfg.DATASETS.TRAIN_UNLABEL,
+            filter_empty=False,
+            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+            if cfg.MODEL.KEYPOINT_ON
+            else 0,
+            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
+            if cfg.MODEL.LOAD_PROPOSALS
+            else None,
+        )
+    else:
+        assert RuntimeError
+
+    
+    # exclude the labeled set from unlabeled dataset
+    unlabel_dataset = DatasetFromList(unlabel_dicts, copy=False)
+    # include the labeled set in unlabel dataset
+    # unlabel_dataset = DatasetFromList(dataset_dicts, copy=False)
+
+    if mapper is None:
+        mapper = DatasetMapper(cfg, True)
+    
+    unlabel_dataset = MapDataset(unlabel_dataset, mapper)
+
+    sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
+    logger = logging.getLogger(__name__)
+    logger.info("Using training sampler {}".format(sampler_name))
+    if sampler_name == "TrainingSampler":    
+        unlabel_sampler = TrainingSampler(len(unlabel_dataset))
+    elif sampler_name == "RepeatFactorTrainingSampler":
+        raise NotImplementedError("{} not yet supported.".format(sampler_name))
+    else:
+        raise ValueError("Unknown training sampler: {}".format(sampler_name))
+    return build_targetonly_data_loader_two_crop(
+        unlabel_dataset,
+        unlabel_sampler,        
+        cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
+        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+    )
+
+# build dataloader with target data only
+def build_detection_sourceonly_loader_two_crops(cfg, mapper=None):
+    if cfg.DATASETS.CROSS_DATASET:  # cross-dataset (e.g., coco-additional)        
+        label_dicts = get_detection_dataset_dicts(
+            cfg.DATASETS.TRAIN_LABEL,
+            filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
+            min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+            if cfg.MODEL.KEYPOINT_ON
+            else 0,
+            proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN
+            if cfg.MODEL.LOAD_PROPOSALS
+            else None,
+        )
+    else:
+        assert RuntimeError
+
+    
+    # exclude the labeled set from unlabeled dataset
+    label_dataset = DatasetFromList(label_dicts, copy=False)
+    # include the labeled set in unlabel dataset
+    # unlabel_dataset = DatasetFromList(dataset_dicts, copy=False)
+
+    if mapper is None:
+        mapper = DatasetMapper(cfg, True)
+    
+    label_dataset = MapDataset(label_dataset, mapper)
+
+    sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
+    logger = logging.getLogger(__name__)
+    logger.info("Using training sampler {}".format(sampler_name))
+    if sampler_name == "TrainingSampler":    
+        label_sampler = TrainingSampler(len(label_dataset))
+    elif sampler_name == "RepeatFactorTrainingSampler":
+        raise NotImplementedError("{} not yet supported.".format(sampler_name))
+    else:
+        raise ValueError("Unknown training sampler: {}".format(sampler_name))
+    return build_targetonly_data_loader_two_crop(
+        label_dataset,
+        label_sampler,        
+        cfg.SOLVER.IMG_PER_BATCH_UNLABEL,
+        aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
+        num_workers=cfg.DATALOADER.NUM_WORKERS,
+    )
 
 # uesed by unbiased teacher trainer
 def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
@@ -158,7 +246,46 @@ def build_detection_semisup_train_loader_two_crops(cfg, mapper=None):
         aspect_ratio_grouping=cfg.DATALOADER.ASPECT_RATIO_GROUPING,
         num_workers=cfg.DATALOADER.NUM_WORKERS,
     )
+# target only batch data loader
+def build_targetonly_data_loader_two_crop(
+    dataset,
+    sampler,    
+    total_batch_size_unlabel,
+    *,
+    aspect_ratio_grouping=False,
+    num_workers=0
+):
+    world_size = get_world_size()
 
+    assert (
+        total_batch_size_unlabel > 0 and total_batch_size_unlabel % world_size == 0
+    ), "Total unlabel batch size ({}) must be divisible by the number of gpus ({}).".format(
+        total_batch_size_label, world_size
+    )
+
+    batch_size_unlabel = total_batch_size_unlabel // world_size
+
+    unlabel_dataset = dataset
+    unlabel_sampler = sampler
+
+    if aspect_ratio_grouping:
+        
+        unlabel_data_loader = torch.utils.data.DataLoader(
+            unlabel_dataset,
+            sampler=unlabel_sampler,
+            num_workers=num_workers,
+            batch_sampler=None,
+            collate_fn=operator.itemgetter(
+                0
+            ),  # don't batch, but yield individual elements
+            worker_init_fn=worker_init_reset_seed,
+        )  # yield individual mapped dict
+        return AspectRatioGroupedDatasetTwoCrop(
+            unlabel_data_loader,
+            batch_size_unlabel
+        )
+    else:
+        raise NotImplementedError("ASPECT_RATIO_GROUPING = False is not supported yet")
 
 # batch data loader
 def build_semisup_batch_data_loader_two_crop(

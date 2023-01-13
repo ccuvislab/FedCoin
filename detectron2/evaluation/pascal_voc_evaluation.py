@@ -90,7 +90,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
         )
 
         with tempfile.TemporaryDirectory(prefix="pascal_voc_eval_") as dirname:
-            dirname="/home/superorange5/Research/ProbabilisticTeacher/tmp/skf2c_sim10k_origin"
+            #dirname="/home/superorange5/Research/ProbabilisticTeacher/tmp/skf2c_sim10k_origin"
             res_file_template = os.path.join(dirname, "{}.txt")
             #print(res_file_template)
 

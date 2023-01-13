@@ -21,6 +21,7 @@ from detectron2.engine import default_argument_parser, default_setup, launch
 
 from pt import add_config
 from pt.engine.trainer import PTrainer
+from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 
 # to register
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
@@ -83,9 +84,9 @@ def get_model(dataset_name,model_num):
     return load_TSmodel(cfg_path, model_path)
 
 
-def run_client_training(i,source_data,cfg):   
+def run_client_training(i,source_data,cfg, Trainer):   
             
-    Trainer = PTrainer
+    
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=False)
     trainer.train()
@@ -94,13 +95,23 @@ def run_client_training(i,source_data,cfg):
     
 def main(args):
     
-    thread_mode=False
-    
     cfg = setup(args)
+    
+    thread_mode=cfg.FEDSET.THREAD
     #cfg.defrost()
     output_folder = cfg.OUTPUT_DIR
     initial_model_path = cfg.MODEL.WEIGHTS
     copyfile(args.config_file, os.path.join(output_folder, 'cfg.yaml'))
+    
+    
+    if cfg.UNSUPNET.Trainer == "pt":
+        Trainer = PTrainer
+    elif cfg.UNSUPNET.Trainer == "sourceonly":
+        Trainer= PTrainer_sourceonly    
+    else:
+        raise ValueError("Trainer Name is not found.")
+    
+    
    
     #---------load initial weight
     source_dataset_list = cfg.FEDSET.DATASET_LIST #["VOC2007_citytrain1","VOC2007_kitti1"]
@@ -130,7 +141,7 @@ def main(args):
                 cfg_client.DATASETS.TRAIN_LABEL=source_dataset
                 print("current source={}".format(source_dataset))
                 cfg_client.freeze()
-                args_names.append((i,source_dataset,cfg_client))
+                args_names.append((i,source_dataset,cfg_client, Trainer))
                 
 
             print(len(args_names))
@@ -153,7 +164,7 @@ def main(args):
                 print("current source={}".format(source_dataset))
                 cfg.freeze()
                 
-                Trainer = PTrainer
+                
                 trainer = Trainer(cfg)
                 trainer.resume_or_load(resume=False)
                 trainer.train()
@@ -177,7 +188,7 @@ def main(args):
         # save model_list
         
         initial_model_path = os.path.join(output_folder, "FedAvg_"+str(r)+".pth")
-        torch.save(avg_model[0].state_dict(), save_name)
+        torch.save(avg_model[0].state_dict(), initial_model_path)
         
         # put avg model to initial_weight        
         print("save avg model to {}".format(initial_model_path))

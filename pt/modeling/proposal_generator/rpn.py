@@ -382,6 +382,7 @@ class GuassianRPN(RPN):
         """
         anchors = Boxes.cat(anchors)
         has_pseudo_boxes = gt_instances[0].has('pseudo_boxes')
+        #print("+++++++has_pseudo_boxes={}".format(has_pseudo_boxes))
         image_sizes = [x.image_size for x in gt_instances]
         if has_pseudo_boxes:
             pseudo_boxes = [x.pseudo_boxes.tensor for x in gt_instances]

@@ -46,6 +46,7 @@ def add_config(cfg):
     _C.UNSUPNET = CN()
 
     # Semi-supervised training
+    _C.UNSUPNET.SOURCE_IDX = 0
     _C.UNSUPNET.Trainer = "pt"
     _C.UNSUPNET.PSEUDO_BBOX_SAMPLE = "all"
     _C.UNSUPNET.TEACHER_UPDATE_ITER = 1
@@ -75,7 +76,9 @@ def add_config(cfg):
 
     # Output channels of conv5 block
     _C.MODEL.VGG.CONV5_OUT_CHANNELS = 512
-
+    
+    _C.MODEL.TEACHER_PATH=['./vgg16_caffe.pth','./vgg16_caffe.pth']
+    _C.MODEL.STUDENT_PATH='./vgg16_caffe.pth'
     _C.MODEL.VGG.PRETRAIN = './vgg16_caffe.pth'
 
     # ---------------------------------------------------------------------------- #

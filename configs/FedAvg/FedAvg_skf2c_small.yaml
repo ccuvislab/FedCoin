@@ -1,5 +1,6 @@
 _BASE_: "../Guassian-RCNN-VGG.yaml"
 MODEL:
+  WEIGHTS: "keep_experiments/FedPT_skf2c/pt_skf2c_AVG.pth"
   ROI_HEADS:
     NUM_CLASSES: 1 
 SOLVER:
@@ -15,6 +16,7 @@ SOLVER:
 DATALOADER:
   NUM_WORKERS: 2
 FEDSET:
+  THREAD: False
   ROUND: 2 
   DATASET_LIST: ("VOC2007_foggytrainsmall","VOC2007_simsmall","VOC2007_kittismall")  
 DATASETS:

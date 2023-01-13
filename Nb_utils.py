@@ -18,6 +18,7 @@ from pt.modeling.proposal_generator.rpn import GuassianRPN
 from pt.modeling.roi_heads.roi_heads import GuassianROIHead
 import pt.data.datasets.builtin
 from pt.engine.trainer import PTrainer
+from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
 from pt.modeling.backbone.vgg import build_vgg_backbone
 from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
@@ -64,6 +65,15 @@ def load_TSmodel(cfg_path, model_path):
     
     return ensem_ts_model
 
+
+def load_sourceonlyModel(cfg_path,model_path):
+    cfg = setup(cfg_path)   
+    
+    Trainer =PTrainer_sourceonly
+    model = Trainer.build_model(cfg)
+    DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
+    
+    return model   
 
 
 def get_model(dataset_name,model_num):
