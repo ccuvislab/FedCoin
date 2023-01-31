@@ -3,7 +3,7 @@ MODEL:
   MASK_ON: False
   WEIGHTS: ''
   BACKBONE:
-    NAME: "build_vgg_backbone"
+    NAME: "build_vgg_backbone_dynamic"
   VGG:
     DEPTH: 16
   ANCHOR_GENERATOR:

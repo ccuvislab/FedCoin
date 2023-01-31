@@ -25,7 +25,10 @@ from augment.transforms import paste_to_batch
 from torchvision.ops import box_iou
 from detectron2.config import configurable
 from detectron2.structures import Boxes, ImageList, pairwise_iou
-
+from pt.modeling.backbone.build_backbone import build_backbone
+#from detectron2.modeling.backbone import  build_backbone
+from detectron2.modeling.proposal_generator import build_proposal_generator
+from detectron2.modeling.roi_heads import build_roi_heads
 
 @META_ARCH_REGISTRY.register()
 class GuassianGeneralizedRCNN(GeneralizedRCNN):
@@ -90,3 +93,17 @@ class GuassianGeneralizedRCNN(GeneralizedRCNN):
             losses.update(detector_losses)
             losses.update(proposal_losses)
             return losses, [], [], None
+        
+    @classmethod
+    def from_config(cls, cfg,myarg=None,load_pretrained=True):
+        backbone = build_backbone(cfg,None,myarg, load_pretrained)
+        
+        return {
+            "backbone": backbone,
+            "proposal_generator": build_proposal_generator(cfg, backbone.output_shape()),
+            "roi_heads": build_roi_heads(cfg, backbone.output_shape()),
+            "input_format": cfg.INPUT.FORMAT,
+            "vis_period": cfg.VIS_PERIOD,
+            "pixel_mean": cfg.MODEL.PIXEL_MEAN,
+            "pixel_std": cfg.MODEL.PIXEL_STD,
+        }

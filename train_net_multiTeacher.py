@@ -21,7 +21,8 @@ from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import PascalVOCDetectionEvaluator
 
-from pt import add_config
+
+
 from pt.engine.FLtrainer import FLtrainer
 
 # to register
@@ -33,6 +34,9 @@ from pt.modeling.backbone.vgg import build_vgg_backbone
 from pt.modeling.anchor_generator import DifferentiableAnchorGenerator
 
 from shutil import copyfile
+
+from pt import add_config
+from FLpkg import add_config as FL_add_config
 import os
 
 import logging
@@ -61,7 +65,10 @@ def setup(args):
     Create configs and perform basic setups.
     """
     cfg = get_cfg()
-    add_config(cfg)
+    
+    add_config(cfg)    
+    FL_add_config(cfg)
+    print(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()

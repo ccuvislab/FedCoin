@@ -77,8 +77,7 @@ def add_config(cfg):
     # Output channels of conv5 block
     _C.MODEL.VGG.CONV5_OUT_CHANNELS = 512
     
-    _C.MODEL.TEACHER_PATH=['./vgg16_caffe.pth','./vgg16_caffe.pth']
-    _C.MODEL.STUDENT_PATH='./vgg16_caffe.pth'
+
     _C.MODEL.VGG.PRETRAIN = './vgg16_caffe.pth'
 
     # ---------------------------------------------------------------------------- #

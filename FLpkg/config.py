@@ -32,5 +32,16 @@ def add_config(cfg):
     # ---------------------------------------------------------------------------- #
     _C.FEDSET.DATASET_LIST = ("VOC2007_citytrain","VOC2007_kitti1")
     _C.FEDSET.ROUND = 10
+    _C.FEDSET.DYNAMIC = False
     _C.FEDSET.THREAD=False
+    _C.FEDSET.NUM_VGG_LAYERS = 13
+    _C.FEDSET.VGG_CONV3_IDX = 6
+    
+    # ---------------------------------------------------------------------------- #
+    # Multi-teacher Settings
+    # ---------------------------------------------------------------------------- #
+    _C.MODEL.TEACHER_PATH=['./vgg16_caffe.pth','./vgg16_caffe.pth']
+    _C.MODEL.STUDENT_PATH='./vgg16_caffe.pth'
+    _C.MODEL.TEACHER_TRAINER= "pt"
+    _C.MODEL.STUDENT_TRAINER= "default"
    

@@ -31,3 +31,11 @@ def avg_model_weight(model_list):
     
     avg_model=avgWeight(model_list,ratio_list)
     return avg_model
+
+
+def get_backbone_shape(fedma_model):
+    backbone_shape = []
+    for idx,(key,value) in enumerate(fedma_model.items()):
+        if idx%2!=0 and idx<26:
+            backbone_shape.append(list(value.shape)[0])
+    return backbone_shape

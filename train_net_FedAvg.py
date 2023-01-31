@@ -85,8 +85,6 @@ def get_model(dataset_name,model_num):
 
 
 def run_client_training(i,source_data,cfg, Trainer):   
-            
-    
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=False)
     trainer.train()
@@ -101,6 +99,10 @@ def main(args):
     #cfg.defrost()
     output_folder = cfg.OUTPUT_DIR
     initial_model_path = cfg.MODEL.WEIGHTS
+    
+    
+    
+    
     copyfile(args.config_file, os.path.join(output_folder, 'cfg.yaml'))
     
     
@@ -162,6 +164,13 @@ def main(args):
                 print("output subdir={}".format(cfg.OUTPUT_DIR))
                 cfg.DATASETS.TRAIN_LABEL=source_dataset
                 print("current source={}".format(source_dataset))
+                
+                #---get backbone-dim
+                if cfg.FEDSET.DYNAMIC:
+                    fedma_model = torch.load(initial_model_path)
+                    backbone_dim = FedUtils.get_backbone_shape(fedma_model)
+                    cfg.BACKBONE_DIM = backbone_dim
+                
                 cfg.freeze()
                 
                 

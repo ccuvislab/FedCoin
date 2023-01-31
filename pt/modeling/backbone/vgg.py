@@ -31,7 +31,8 @@ cfgs = {
     16: [64, 64, "M", 128, 128, "M", 256, 256, 256, "M", 512, 512, 512, "M", 512, 512, 512, "M"],
     19: [64, 64, "M", 128, 128, "M", 256, 256, 256, 256, "M", 512, 512, 512, 512, "M", 512, 512, 512, 512, "M"],
 }
-
+#'ck':[64, 64, 'M', 128, 128, 'M', 256, 259, 259, 'M', 515, 515, 515, 'M', 515, 515, 512,],
+#'skf':[64, 64, 'M', 128, 128, 'M', 256, 262, 262, 'M', 518, 518, 518, 'M', 518, 518, 512],
 
 class VGGBlock(CNNBlockBase):
     def __init__(self, in_channels, channel_cfg, norm="BN", pool=True):
@@ -73,7 +74,7 @@ class VGGBlock(CNNBlockBase):
 
 
 class VGG(Backbone):
-    def __init__(self, stages, num_classes=None, out_features=None, pretrain='./vgg16_caffe.pth'):
+    def __init__(self, stages, num_classes=None, out_features=None, pretrain='./vgg16_caffe.pth', load_pretrained=True):
         """
         """
         super().__init__()
@@ -124,7 +125,7 @@ class VGG(Backbone):
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
             assert out_feature in children, "Available children: {}".format(", ".join(children))
-        if True:
+        if load_pretrained:
             self.model_path = pretrain
             state_dict = torch.load(self.model_path)
             dict_map_pth = ['features.0.weight', 'features.0.bias', 'features.2.weight', 'features.2.bias',
@@ -178,6 +179,20 @@ class VGG(Backbone):
                 for block in stage.children():
                     block.freeze()
         return self
+    
+    def freeze_by_layer(self, freeze_tuple):
+        freeze_block, freeze_layer = freeze_tuple
+        for idx, (stage, _) in enumerate(self.stages_and_names, start=1):    
+            if idx <freeze_block:
+                for block in stage.children():
+                        block.freeze()
+            elif idx == freeze_block:
+                for block in stage.children():        
+                    for i_idx, layer in enumerate(block.children()):
+                        if i_idx <=freeze_layer:                
+                            for p in layer.parameters():
+                                p.requires_grad=False
+        return self
 
     @staticmethod
     def make_stage(block_class, in_channels, channel_cfg, **kwargs):
@@ -185,6 +200,67 @@ class VGG(Backbone):
         blocks = block_class(in_channels=in_channels, channel_cfg=channel_cfg, **kwargs)
         return blocks
 
+    
+@BACKBONE_REGISTRY.register()
+def build_vgg_backbone_dynamic(cfg, input_shape, backbone_dim, load_pretrained):
+    # fmt: off
+    depth = cfg.MODEL.VGG.DEPTH
+    freeze_at = cfg.MODEL.BACKBONE.FREEZE_AT
+    norm = cfg.MODEL.VGG.NORM
+    out_features = cfg.MODEL.VGG.OUT_FEATURES
+    in_channels = input_shape.channels
+    pretrain = cfg.MODEL.VGG.PRETRAIN
+    # fmt: on
+
+    stages = []
+    out_stage_idx = [
+        {"vgg_block1": 1, "vgg_block2": 2, "vgg_block3": 3, "vgg_block4": 4, "vgg_block5": 5}[f]
+        for f in out_features
+    ]
+    max_stage_idx = max(out_stage_idx)
+    
+    
+    #------replace by new cfgs
+    if backbone_dim is None:
+        cfgs_new = cfgs[depth]
+    else:
+        count_idx = 0
+        cfgs_new=[]
+        for ele in cfgs[depth]:
+            if ele !='M':
+                cfgs_new.append(backbone_dim[count_idx])
+                count_idx+=1
+            else: cfgs_new.append(ele)
+    #-----------------
+    
+
+    
+    stage_inds = [i for i, x in enumerate(cfgs_new) if x == "M"]
+    ind = 0
+
+    for idx, stage_idx in enumerate(range(1, max_stage_idx + 1)):
+
+        # No maxpooling in the last block
+        if stage_idx == 5:
+            pool = False
+        else:
+            pool = True
+
+        stage_kargs = {
+            "block_class": VGGBlock,
+            "in_channels": in_channels,
+            "channel_cfg": cfgs_new[ind: stage_inds[idx]],
+            "norm": norm,
+            "pool": pool,
+        }
+
+        blocks = VGG.make_stage(**stage_kargs)
+        out_channels = cfgs_new[ind: stage_inds[idx]][-1]
+        in_channels = out_channels
+        ind = stage_inds[idx] + 1
+        stages.append(blocks)
+    return VGG(stages, out_features=out_features, pretrain=pretrain, load_pretrained=load_pretrained).freeze(freeze_at)
+    
 
 @BACKBONE_REGISTRY.register()
 def build_vgg_backbone(cfg, input_shape):
@@ -202,7 +278,9 @@ def build_vgg_backbone(cfg, input_shape):
         {"vgg_block1": 1, "vgg_block2": 2, "vgg_block3": 3, "vgg_block4": 4, "vgg_block5": 5}[f]
         for f in out_features
     ]
-    max_stage_idx = max(out_stage_idx)
+    max_stage_idx = max(out_stage_idx)   
+
+    
     stage_inds = [i for i, x in enumerate(cfgs[depth]) if x == "M"]
     ind = 0
 

@@ -23,10 +23,23 @@ from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
 from pt.modeling.backbone.vgg import build_vgg_backbone
 from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
 from pt import add_config
-
+from functools import wraps
+from FLpkg import add_config as FL_add_config
 
 
 ##----------config
+def setup_all(config_file):
+    """
+    Create configs and perform basic setups.
+    """
+    cfg = get_cfg()
+    add_config(cfg)
+    FL_add_config(cfg)
+    cfg.merge_from_file(config_file)
+
+    cfg.freeze()
+    return cfg
+
 def setup(config_file):
     """
     Create configs and perform basic setups.
@@ -49,7 +62,26 @@ def scaling(proposal_roih,ratio):
     scale_pred.scale(ratio,ratio)
     return scale_pred
 ##------------model
+def get_model(func):
+    @wraps(func)
+    def warp(dataset_name,model_num):        
+        
+        model_folder = 'keep_experiments'
 
+        if model_num =='final':
+            model_name ='model_final.pth'
+        else:
+            model_name = 'model_{0:07d}.pth'.format(model_num)
+        model_path = os.path.join(model_folder,dataset_name,model_name)
+        cfg_path = os.path.join(model_folder,dataset_name,'cfg.yaml')
+        print(cfg_path)
+        print(model_path)
+        return func(cfg_path, model_path)
+    return warp
+
+
+
+@get_model
 def load_TSmodel(cfg_path, model_path):
     cfg = setup(cfg_path)
     #cfg.defrost()
@@ -65,7 +97,7 @@ def load_TSmodel(cfg_path, model_path):
     
     return ensem_ts_model
 
-
+@get_model
 def load_sourceonlyModel(cfg_path,model_path):
     cfg = setup(cfg_path)   
     
@@ -73,21 +105,12 @@ def load_sourceonlyModel(cfg_path,model_path):
     model = Trainer.build_model(cfg)
     DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
     
-    return model   
+    return model 
 
 
-def get_model(dataset_name,model_num):
-    model_folder = 'keep_experiments'
 
-    if model_num =='final':
-        model_name ='model_final.pth'
-    else:
-        model_name = 'model_{0:07d}.pth'.format(model_num)
-    model_path = os.path.join(model_folder,dataset_name,model_name)
-    cfg_path = os.path.join(model_folder,dataset_name,'cfg.yaml')
-    print(cfg_path)
-    print(model_path)
-    return load_TSmodel(cfg_path, model_path)
+
+
 
 ##-----------prediction
 

@@ -40,6 +40,7 @@ from pt.data.build import (
 from pt.data.dataset_mapper import DatasetMapperTwoCropSeparate
 from pt.engine.hooks import LossEvalHook
 from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
+from pt.modeling.build import build_my_model
 from pt.checkpoint.detection_checkpoint import DetectionTSCheckpointer
 from pt.solver.build import build_lr_scheduler
 from detectron2.utils.env import TORCH_VERSION
@@ -61,6 +62,8 @@ import torch.nn.functional as F
 import random
 import copy
 import gc
+from detectron2.utils.registry import Registry
+
 
 
 # PTrainer
@@ -76,7 +79,11 @@ class PTrainer_sourceonly(DefaultTrainer):
         data_loader = self.build_train_loader(cfg)
 
         # create an student model
-        model = self.build_model(cfg)
+        
+        if cfg.FEDSET.DYNAMIC:
+            model = self.build_model(cfg,cfg.BACKBONE_DIM,False)
+        else:
+            model = self.build_model(cfg)
         optimizer = self.build_optimizer(cfg, model)
         # from IPython import embed
         # embed()
@@ -112,6 +119,23 @@ class PTrainer_sourceonly(DefaultTrainer):
                 m.inplace = True
 
         self.model.apply(inplace_relu)
+    
+        
+    @classmethod
+    def build_model(cls, cfg, myarg=None,load_pretrained=True):
+        """
+        Returns:
+            torch.nn.Module:
+
+        It now calls :func:`detectron2.modeling.build_model`.
+        Overwrite it if you'd like a different model.
+        """
+        
+        model = build_my_model(cfg,myarg,load_pretrained)
+        logger = logging.getLogger(__name__)
+        logger.info("Model:\n{}".format(model))
+        return model
+
 
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
