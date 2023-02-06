@@ -121,6 +121,8 @@ def main(args):
             )
             res = Trainer.test(cfg, model)
         return res
+    
+
 
     trainer = Trainer(cfg)
     #trainer.resume_or_load(resume=args.resume)

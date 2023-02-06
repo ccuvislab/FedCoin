@@ -105,13 +105,16 @@ def main(args):
     num_workers = len(model_list)
     nets, model_meta_data, layer_type = init_vgg16_rcnns(num_workers)
 
-    vgg_weights = pdm_prepare_weights_vggs([m.backbone for m in model_list], 'cpu')
+    
 
     NUM_VGG_LAYERS = cfg.FEDSET.NUM_VGG_LAYERS
     VGG_CONV3_IDX = cfg.FEDSET.VGG_CONV3_IDX
     
     ##---------------FedMA loop
     for vgg_layer_idx in range(1, NUM_VGG_LAYERS):
+        model_list  = [model.cpu() for model in model_list]        
+        vgg_weights = pdm_prepare_weights_vggs([m.backbone for m in model_list], 'cpu')
+
         
         if vgg_layer_idx < VGG_CONV3_IDX: ### fix layers before conv3.
             vgg_weights, assignments_list = BBP_MAP_trivial(vgg_weights,

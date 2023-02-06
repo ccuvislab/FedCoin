@@ -2,6 +2,7 @@ _BASE_: "../Guassian-RCNN-VGG.yaml"
 MODEL:
   BACKBONE:
     NAME: "build_vgg_backbone_dynamic"
+    FREEZE_AT: 5
   WEIGHTS: "output/FedMA_skf2c_source-only/FedAvg_final.pth" 
   ROI_HEADS:
     NUM_CLASSES: 1 
@@ -21,7 +22,7 @@ FEDSET:
   THREAD: False
   DYNAMIC: True
   ROUND: 3
-  DATASET_LIST: ("VOC2007_foggytrain1","VOC2007_sim1","VOC2007_kitti1")  
+  DATASET_LIST: ("VOC2007_sim1","VOC2007_kitti1","VOC2007_foggytrain1")  
 DATASETS:
   CROSS_DATASET: True
 #  TRAIN_UNLABEL: ("VOC2007_bddtrain1",)

@@ -2,36 +2,36 @@ _BASE_: "../Guassian-RCNN-VGG.yaml"
 MODEL:
   BACKBONE:
     NAME: "build_vgg_backbone_dynamic"
+    FREEZE_AT: 5
   ROI_HEADS:
     NUM_CLASSES: 1 
-  TEACHER_TRAINER: "pt"
-  TEACHER_PATH: ('keep_experiments/k2b_source-only/model_0007999.pth','keep_experiments/c2b_source-only/model_0027999.pth')
+  TEACHER_TRAINER: "default"
+  STUDENT_TRAINER: "sourceonly"
+  TEACHER_PATH: ('output/FedAvg_ck2b/VOC2007_kitti1_1/model_final.pth','output/FedAvg_ck2b/VOC2007_citytrain1_2/model_final.pth')
+  STUDENT_PATH: 'output/FedMA_ck2b_source-only/FedAvg_final.pth'
 FEDSET:
-  THREAD: False
   DYNAMIC: True
-  ROUND: 0
-  DATASET_LIST: ("VOC2007_kitti1","VOC2007_citytrain1")  
 SOLVER:
   LR_SCHEDULER_NAME: "WarmupMultiStepLR"
-  STEPS: (4000,)
-  MAX_ITER: 4000
+  STEPS: (30000,)
+  MAX_ITER: 30000
   IMG_PER_BATCH_LABEL: 16
   IMG_PER_BATCH_UNLABEL: 16
   BASE_LR: 0.016
-  WARMUP_ITERS: 0
-  CHECKPOINT_PERIOD: 800
+  WARMUP_ITERS: 400
+  CHECKPOINT_PERIOD: 4000
   REFERENCE_BATCH_SIZE: 16
 DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
   CROSS_DATASET: True
   TRAIN_LABEL: ("VOC2007_citytrain1",)
-  #TRAIN_UNLABEL: ("VOC2007_bddtrain1",)
-  TEST: ("VOC2007_bddvalsmall",)
+  TRAIN_UNLABEL: ("VOC2007_bddval1",)
+  TEST: ("VOC2007_bddval1",)
 UNSUPNET:
-  Trainer: "sourceonly"
+  SOURCE_IDX: 1
+  Trainer: "FLtrainer"
   TEACHER_UPDATE_ITER: 1
-  BURN_UP_STEP: 0
   EMA_KEEP_RATE: 0.9996
   SOURCE_LOSS_WEIGHT: 1.0
   TARGET_UNSUP_LOSS_WEIGHT: 1.0
@@ -46,4 +46,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/FedMA_ck2b_source-only/"
+OUTPUT_DIR: "./output/multi-teacher_ck2b_city_sourceonly_FedMAbackbone/"

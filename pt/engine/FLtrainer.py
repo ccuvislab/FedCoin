@@ -67,7 +67,9 @@ import copy
 import gc
 
 from pt.engine.trainer import PTrainer
+from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
+from FLpkg import FedUtils
 
 
 # PTrainer
@@ -84,19 +86,24 @@ class FLtrainer(DefaultTrainer):
         # load data
         data_loader = self.build_train_loader(cfg)
         
+
         
         # build model architecture
-        student_model = self.build_model(cfg)
+        self.build_multi_model()
+        student_model = self.student_model
+        model_teacher_list = self.model_teacher_list
+        
+        #student_model = self.build_model(cfg)
         #  build optimizer
         optimizer = self.build_optimizer(cfg, student_model)
         
         # build teacher model
-        model_path_list = cfg.MODEL.TEACHER_PATH
-        model_teacher_list = []                              
-        for idx in range(len(model_path_list)):
-            teacher_model = self.build_model(cfg)
-            model_teacher_list.append(teacher_model)     
-        self.model_teacher_list = model_teacher_list
+#        model_path_list = cfg.MODEL.TEACHER_PATH
+#         model_teacher_list = []                              
+#         for idx in range(len(model_path_list)):
+#             teacher_model = self.build_model(cfg)
+#             model_teacher_list.append(teacher_model)     
+#         self.model_teacher_list = model_teacher_list
         
         
         # parallel
@@ -123,7 +130,7 @@ class FLtrainer(DefaultTrainer):
         )        
         
         ##------load model weight
-        self._update_model_weight()
+        #self._update_model_weight()
         
         self.start_iter = 0
         self.max_iter = cfg.SOLVER.MAX_ITER
@@ -326,6 +333,7 @@ class FLtrainer(DefaultTrainer):
             
             roih_list = []
             for tea_i in range(num_teacher):
+                
                 ( _, proposals_rpn_unsup_k, proposals_roih_unsup_k, _,) = self.model_teacher_list[tea_i](unlabel_data_k, branch="unsup_data_weak")
                 roih_list.append(proposals_roih_unsup_k)
             batch_size = len(roih_list[0])
@@ -513,6 +521,24 @@ class FLtrainer(DefaultTrainer):
         keep_index = df_src.index[df_src.summary==source_num]
         return keep_index
     
+    def load_SOmodel(self, cfg, model_path):
+        print("load source-only pt model")
+        Trainer= PTrainer_sourceonly   
+        if cfg.FEDSET.DYNAMIC: 
+            fedma_model = torch.load(model_path)
+            backbone_dim = FedUtils.get_backbone_shape(fedma_model)
+            
+            cfg.defrost()
+            #cfg.MODEL.WEIGHTS = model_path                    
+            cfg.BACKBONE_DIM = backbone_dim        
+            cfg.freeze
+            
+            model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
+        else:
+            model = Trainer.build_model(cfg) 
+        DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
+        return model
+    
     def load_FRCNNmodel(self,cfg, model_path): 
         print("load FRCNN model")
         Trainer =DefaultTrainer
@@ -525,19 +551,21 @@ class FLtrainer(DefaultTrainer):
         model_teacher = Trainer.build_model(cfg)
         ensem_ts_model = EnsembleTSModel(model_teacher, model)    
         DetectionCheckpointer(ensem_ts_model).resume_or_load(model_path, resume=False)
-        return ensem_ts_model
+        return ensem_ts_model.modelTeacher
 
 
     def get_trainer(self, trainer_name, cfg, model_path):
         if trainer_name == "pt":
-            return self.load_TSmodel(cfg, model_path)       
+            return self.load_TSmodel(cfg, model_path)  
+        elif trainer_name == "sourceonly":
+            return self.load_SOmodel(cfg, model_path)              
         elif trainer_name == "default":
             return self.load_FRCNNmodel(cfg, model_path)       
         else:
             raise ValueError("Trainer Name is not found.")
         
     @torch.no_grad()
-    def _update_model_weight(self):
+    def build_multi_model(self):
         cfg = self.cfg
         #-----load model weight
         model_path_list = cfg.MODEL.TEACHER_PATH
@@ -549,44 +577,45 @@ class FLtrainer(DefaultTrainer):
 
 
         
-        model_list=[]
+        self.model_teacher_list=[]
         for model_teacher_path in model_path_list:
             print("load teacher model:{} ".format(model_teacher_path))
             
             model_with_weight = self.get_trainer(teacher_trainer, cfg, model_teacher_path)
-            model_list.append(model_with_weight)
+            self.model_teacher_list.append(model_with_weight)
 
         print("load student model:{} ".format(student_model_path))
-        student_initial_backbone = self.get_trainer(student_trainer, cfg, student_model_path)
+        self.student_model = self.get_trainer(student_trainer, cfg, student_model_path)
         
         
+        print(type(self.model_teacher_list[0]))
         
-        #---- load teacher
-        for i, model in enumerate(model_list):
-            new_teacher_dict = OrderedDict()
+#         #---- load teacher
+#         for i, model in enumerate(model_list):
+#             new_teacher_dict = OrderedDict()
             
-            if teacher_trainer== "pt":
-                source_model_dict = model.modelStudent.state_dict()
-            else:
-                source_model_dict = model.state_dict()
+#             if teacher_trainer== "pt":
+#                 source_model_dict = model.modelStudent.state_dict()
+#             else:
+#                 source_model_dict = model.state_dict()
 
-            for key, value in source_model_dict.items():
-                if key in self.model_teacher_list[i].state_dict().keys():
-                    new_teacher_dict[key] = value    
-            self.model_teacher_list[i].load_state_dict(new_teacher_dict)
+#             for key, value in source_model_dict.items():
+#                 if key in self.model_teacher_list[i].state_dict().keys():
+#                     new_teacher_dict[key] = value    
+#             self.model_teacher_list[i].load_state_dict(new_teacher_dict)
 
-        #----------load student
-        new_student_dict = OrderedDict()
+#         #----------load student
+#         new_student_dict = OrderedDict()
         
-        if student_trainer== "pt":
-            pseudo_model_dict = student_initial_backbone.modelStudent.state_dict()
-        else:
-            pseudo_model_dict = student_initial_backbone.state_dict()
+#         if student_trainer== "pt":
+#             pseudo_model_dict = student_initial_backbone.modelStudent.state_dict()
+#         else:
+#             pseudo_model_dict = student_initial_backbone.state_dict()
         
-        for key, value in pseudo_model_dict.items():    
-            if key in self.model.state_dict().keys():
-                new_student_dict[key] = value
-        self.model.load_state_dict(new_student_dict)    
+#         for key, value in pseudo_model_dict.items():    
+#             if key in self.model.state_dict().keys():
+#                 new_student_dict[key] = value
+#         self.model.load_state_dict(new_student_dict)    
 
 
 

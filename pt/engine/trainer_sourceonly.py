@@ -84,6 +84,7 @@ class PTrainer_sourceonly(DefaultTrainer):
             model = self.build_model(cfg,cfg.BACKBONE_DIM,False)
         else:
             model = self.build_model(cfg)
+        
         optimizer = self.build_optimizer(cfg, model)
         # from IPython import embed
         # embed()
