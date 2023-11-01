@@ -5,9 +5,9 @@ MODEL:
     FREEZE_AT: 5
   ROI_HEADS:
     NUM_CLASSES: 1 
-  TEACHER_TRAINER: "default"
+  TEACHER_TRAINER: "sourceonly"
   STUDENT_TRAINER: "sourceonly"
-  TEACHER_PATH: ('output/FedAvg_skf2c_sourceonly/VOC2007_sim1_2/model_0003199.pth','output/FedAvg_skf2c_sourceonly/VOC2007_kitti1_2/model_0000799.pth','output/FedAvg_skf2c_sourceonly/VOC2007_foggytrain1_2/model_0002399.pth')
+  TEACHER_PATH: ('output/FedMA_skf2c_source-only/FedMA_VOC2007_sim1_12.pth','output/FedMA_skf2c_source-only/FedMA_VOC2007_kitti1_12.pth','output/FedMA_skf2c_source-only/FedMA_VOC2007_foggytrain1_12.pth')
   STUDENT_PATH: 'output/FedMA_skf2c_source-only/FedAvg_final.pth'
 FEDSET:
   DYNAMIC: True

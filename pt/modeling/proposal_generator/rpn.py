@@ -84,6 +84,7 @@ class GuassianRPN(RPN):
                 compute_loss: bool = True,
                 branch: str = '',
                 danchor=False):
+        #print("!!!! training={}".format(self.training))
         features = [features[f] for f in self.in_features]
 
         anchors = self.anchor_generator(features)

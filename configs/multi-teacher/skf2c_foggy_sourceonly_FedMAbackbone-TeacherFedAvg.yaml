@@ -5,10 +5,10 @@ MODEL:
     FREEZE_AT: 5
   ROI_HEADS:
     NUM_CLASSES: 1 
-  TEACHER_TRAINER: "sourceonly"
+  TEACHER_TRAINER: "default"
   STUDENT_TRAINER: "sourceonly"
-  TEACHER_PATH: ('output/FedMA_ck2b_source-only/FedMA_VOC2007_kitti1_12.pth','output/FedMA_ck2b_source-only/FedMA_VOC2007_citytrain1_12.pth')
-  STUDENT_PATH: 'output/FedMA_ck2b_source-only/FedAvg_final.pth'
+  TEACHER_PATH: ('output/FedAvg_skf2c_sourceonly/VOC2007_sim1_2/model_0003199.pth','output/FedAvg_skf2c_sourceonly/VOC2007_kitti1_2/model_0000799.pth','output/FedAvg_skf2c_sourceonly/VOC2007_foggytrain1_2/model_0002399.pth')
+  STUDENT_PATH: 'output/FedMA_skf2c_source-only/FedAvg_final.pth'
 FEDSET:
   DYNAMIC: True
 SOLVER:
@@ -25,11 +25,11 @@ DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
   CROSS_DATASET: True
-  TRAIN_LABEL: ("VOC2007_citytrain1",)
-  TRAIN_UNLABEL: ("VOC2007_bddval1",)
-  TEST: ("VOC2007_bddvalsmall",)
+  TRAIN_LABEL: ("VOC2007_foggytrain1",)
+  TRAIN_UNLABEL: ("VOC2007_citytrain1",)
+  TEST: ("VOC2007_cityval1",)
 UNSUPNET:
-  SOURCE_IDX: 1
+  SOURCE_IDX: 2
   Trainer: "FLtrainer"
   TEACHER_UPDATE_ITER: 1
   EMA_KEEP_RATE: 0.9996
@@ -46,4 +46,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/multi-teacher_ck2b_city_sourceonly_FedMAbackbone/"
+OUTPUT_DIR: "./output/multi-teacher_skf2c_foggy_sourceonly_FedMAbackbone_TeacherFedAvg/"

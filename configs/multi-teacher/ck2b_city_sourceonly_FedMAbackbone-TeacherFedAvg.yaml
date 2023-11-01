@@ -5,9 +5,9 @@ MODEL:
     FREEZE_AT: 5
   ROI_HEADS:
     NUM_CLASSES: 1 
-  TEACHER_TRAINER: "sourceonly"
+  TEACHER_TRAINER: "default"
   STUDENT_TRAINER: "sourceonly"
-  TEACHER_PATH: ('output/FedMA_ck2b_source-only/FedMA_VOC2007_kitti1_12.pth','output/FedMA_ck2b_source-only/FedMA_VOC2007_citytrain1_12.pth')
+  TEACHER_PATH: ('output/FedAvg_ck2b/VOC2007_kitti1_1/model_final.pth','output/FedAvg_ck2b/VOC2007_citytrain1_2/model_final.pth')
   STUDENT_PATH: 'output/FedMA_ck2b_source-only/FedAvg_final.pth'
 FEDSET:
   DYNAMIC: True
@@ -27,7 +27,7 @@ DATASETS:
   CROSS_DATASET: True
   TRAIN_LABEL: ("VOC2007_citytrain1",)
   TRAIN_UNLABEL: ("VOC2007_bddval1",)
-  TEST: ("VOC2007_bddvalsmall",)
+  TEST: ("VOC2007_bddval1",)
 UNSUPNET:
   SOURCE_IDX: 1
   Trainer: "FLtrainer"
@@ -46,4 +46,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/multi-teacher_ck2b_city_sourceonly_FedMAbackbone/"
+OUTPUT_DIR: "./output/multi-teacher_ck2b_city_sourceonly_FedMAbackbone_TeacherFedAvg/"

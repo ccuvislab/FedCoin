@@ -13,6 +13,8 @@ from detectron2.data import build_detection_test_loader
 from detectron2.structures.boxes import Boxes
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
+from detectron2.engine import DefaultTrainer
+
 
 from pt.modeling.proposal_generator.rpn import GuassianRPN
 from pt.modeling.roi_heads.roi_heads import GuassianROIHead
@@ -55,6 +57,8 @@ def setup(config_file):
 
     cfg.freeze()
     return cfg
+
+
 
 
 def scaling(proposal_roih,ratio):
@@ -109,12 +113,25 @@ def load_sourceonlyModel(cfg_path,model_path):
 
 
 
-
+def load_FRCNNmodel(cfg, model_path):
+    #cfg = setup(cfg_path)
+    #cfg.defrost()
+    #cfg.MODEL.WEIGHTS = model_path
+    
+    Trainer =DefaultTrainer
+    model = Trainer.build_model(cfg)    
+    
+    DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
+    
+    return model
 
 
 ##-----------prediction
 
+
+
 def get_proposal_roih(data,model):
+
     with torch.no_grad():
         (_,  proposals_rpn_unsup_k, proposals_roih_unsup_k, _,) =model.modelStudent(
             data, branch="unsup_data_weak")
@@ -143,7 +160,8 @@ def get_match_array_all(proposals_roih, gt,ratio):
     bboxes_gt = structures.Boxes(torch.Tensor(box_list)).to("cuda")
     
     source_prediction = []
-    for proposals_roih_n in proposals_roih:
+    for i, proposals_roih_n in enumerate(proposals_roih):  
+        
         prediction_temp = scaling(proposals_roih_n,ratio)
         source_prediction.append(prediction_temp)
         
@@ -242,11 +260,11 @@ def drawbb(image_filename, target_metadata, bboxes_to_draw):
 def eval_metric_summary(test_data_loader,data_annotation, model_list, source_list,ratio, output_file ):
     source_num = len(source_list)
     
-    f = open(output_file, "a")
+    f = open(output_file, "w")
     
     column_name = "filename,TP,"
     for i in range(source_num):
-        column_name+="TN"+str(i)+","
+        column_name+="FN"+str(i)+","
     for i in range(source_num):
         column_name+="FP"+str(i)+","
     column_name = column_name[:-1]
@@ -299,7 +317,7 @@ def gen_pie_chart_list(eval_ck2b):
     return pie_chart_list
 
 
-def draw_pie_chart(pie_chart_list, labels,title):
+def draw_pie_chart(pie_chart_list, labels,DA_dataset, detector):
 #labels =['TN_s1','TN_s2','TN_3','TP','FP_s1','FP_s2','FP_3']
     fig, ax = plt.subplots(figsize=(10, 5), subplot_kw=dict(aspect="equal"))
     wedges, texts, autotexts =ax.pie(pie_chart_list,
@@ -317,5 +335,5 @@ def draw_pie_chart(pie_chart_list, labels,title):
           loc="center left",
           bbox_to_anchor=(1.5, 0, 0.5, 1))
     plt.setp(autotexts, size=12,color='white', weight="bold")
-    ax.set_title("{} FP/TN analysis".format(title),size=18)
+    ax.set_title("FP/FN analysis, {} dataset using {}".format(DA_dataset, detector),size=18)
     plt.show()

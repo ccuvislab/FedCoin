@@ -14,7 +14,7 @@ from detectron2.data import MetadataCatalog
 from detectron2.utils import comm
 from detectron2.utils.file_io import PathManager
 
-from .evaluator import DatasetEvaluator
+from detectron2.evaluation.evaluator import DatasetEvaluator
 
 
 class PascalVOCDetectionEvaluator(DatasetEvaluator):
@@ -51,14 +51,29 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
     def reset(self):
         self._predictions = defaultdict(list)  # class name -> list of prediction strings
 
-    def process(self, inputs, outputs):
+    def process_train(self, inputs, outputs):
         for input, output in zip(inputs, outputs):
             image_id = input["image_id"]
-            instances = output["instances"].to(self._cpu_device)
-            #print(instances.pred_boxes.tensor)
-            #print(instances.pred_boxes.tensor.grad_fn)
-            
-            boxes = instances.pred_boxes.tensor.numpy()
+            instances = output.to(self._cpu_device)
+                
+            #[0].to(torch.device("cpu")).pseudo_boxes.tensor.numpy()
+            boxes = instances.pseudo_boxes.tensor.numpy()
+            scores = instances.scores.tolist()
+            #print(scores)
+            classes = instances.pred_classes.tolist()
+            for box, score, cls in zip(boxes, scores, classes):
+                xmin, ymin, xmax, ymax = box
+                # The inverse of data loading logic in `datasets/pascal_voc.py`
+                xmin += 1
+                ymin += 1
+                self._predictions[cls].append(
+                    f"{image_id} {score:.3f} {xmin:.1f} {ymin:.1f} {xmax:.1f} {ymax:.1f}"
+                )
+    def process_eval(self, inputs, outputs):
+        for input, output in zip(inputs, outputs):
+            image_id = input["image_id"]
+            instances = output["instances"].to(self._cpu_device)            
+            boxes = instances.pred_boxes.tensor.detach().numpy()
             scores = instances.scores.tolist()
             #print(scores)
             classes = instances.pred_classes.tolist()
