@@ -1,8 +1,8 @@
-# Learning Domain Adaptive Object Detection with Probabilistic Teacher
+# A Privacy-preserving Approach for Multi-source Domain Adaptive Object Detection
 
-![pipeline](teaser/pt.jpg)
+![architecture](pic/architecture.png)
 
-This repo is the official implementation of ICML2022 paper "[Learning Domain Adaptive Object Detection with Probabilistic Teacher](https://arxiv.org/pdf/2206.06293.pdf)" by Meilin Chen, Weijie Chen, Shicai Yang, *et al*. If you have any problem about this work, please feel free to contact Meilin Chen (merlinis-at-zju.edu.cn) or Weijie Chen (chenweijie5-at-hikvision.com).
+This repo is the official implementation of ICIP paper "[A Privacy-preserving Approach for Multi-source Domain Adaptive Object Detection](https://ieeexplore.ieee.org/document/10222121/)" by Peggy Lu, Chia-Yung Jui, Jen-Hui Chuang.
 
 ## Installation
 
@@ -26,9 +26,28 @@ We used VGG16 pre-trained on ImageNet for all experiments. You can download it t
 - VGG16: [Dropbox](https://www.dropbox.com/s/s3brpk0bdq60nyb/vgg16_caffe.pth?dl=0), [VT Server](https://filebox.ece.vt.edu/~jw2yang/faster-rcnn/pretrained-base-models/vgg16_caffe.pth)
 
 ### Training
-Plz refer to [get_started.md](docs/get_started.md) for detailed commands.
 
-## Main Results
+### main file
+* train_net_FedAvg.py
+* train_net_FedMA.py
+* train_net_multiTeacher.py
+
+### config
+You can change ```--config configs/pt/final_c2f.yaml``` to other configs in ```configs/xxx``` to reproduce the main results of other tasks.
+
+* configs/FedAvg/xxx.yaml
+* configs/FedMA/xxx
+* configs/multi-teacher
+* configs/source-only
+
+
+##  training
+```
+python train_net_multiTeacher.py --config-file configs/multi-teacher/skf2c_foggy_sourceonly_FedMAbackbone.yaml
+```
+
+
+## Main Results (to be modified)
 This code has been further improved,  achiving more superior adaptation performance than the results presented in the paper (about +1~2 mAP gains across the tasks, see exps logs for details).
 |Adaptation Tasks |Methods|Model Weights | mAP50                 | Log |
 | ---- | -------| ----- |------------------------------|------------------------------|
@@ -40,16 +59,17 @@ This code has been further improved,  achiving more superior adaptation performa
 
 ## Citation
 
-If you use Probabilistic Teacher in your research or wish to refer to the results published in the paper, please consider citing our paper:
+If you use this project in your research or wish to refer to the results published in the paper, please consider citing our paper:
 ```BibTeX
-@inproceedings{chen2022learning,
-  title={Learning Domain Adaptive Object Detection with Probabilistic Teacher},
-  author={Chen, Meilin and Chen, Weijie and Yang, Shicai and Song, Jie and Wang, Xinchao and Zhang, Lei and Yan, Yunfeng and Qi, Donglian and Zhuang, Yueting and Xie, Di and others},
-  booktitle={International Conference on Machine Learning},
-  pages={3040--3055},
-  year={2022},
-  organization={PMLR}
-}
+@INPROCEEDINGS{10222121,
+  author={Lu, Peggy Joy and Jui, Chia-Yung and Chuang, Jen-Hui},
+  booktitle={2023 IEEE International Conference on Image Processing (ICIP)}, 
+  title={A Privacy-Preserving Approach for Multi-Source Domain Adaptive Object Detection}, 
+  year={2023},
+  volume={},
+  number={},
+  pages={1075-1079},
+  doi={10.1109/ICIP49359.2023.10222121}}
 ```
 
 ## License
