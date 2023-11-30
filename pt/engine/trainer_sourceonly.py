@@ -79,12 +79,14 @@ class PTrainer_sourceonly(DefaultTrainer):
         data_loader = self.build_train_loader(cfg)
 
         # create an student model
-        
-        if cfg.FEDSET.DYNAMIC:
-            model = self.build_model(cfg,cfg.BACKBONE_DIM,False)
-        else:
-            model = self.build_model(cfg)
-        
+        try:
+            if cfg.FEDSET.DYNAMIC:
+                model = self.build_model(cfg,cfg.BACKBONE_DIM,False)
+            else:
+                model = self.build_model(cfg)
+        except: 
+            model = self.build_model(cfg)   
+
         optimizer = self.build_optimizer(cfg, model)
         # from IPython import embed
         # embed()
