@@ -66,19 +66,37 @@ class GuassianGeneralizedRCNN(GeneralizedRCNN):
 
         elif branch == "unsup_data_weak":
             # Region proposal network
-            proposals_rpn, _ = self.proposal_generator(
-                images, features, None, compute_loss=False
-            )
-            proposals_roih, ROI_predictions = self.roi_heads(
-                images,
-                features,
-                proposals_rpn,
-                targets=None,
-                compute_loss=False,
-                branch=branch,
+            proposals_rpn, proposal_losses = self.proposal_generator(
+                images, features, gt_instances
             )
 
-            return {}, proposals_rpn, proposals_roih, ROI_predictions
+            # # roi_head lower branch
+            _, detector_losses = self.roi_heads(
+                images, features, proposals_rpn, gt_instances, branch=branch
+            )
+
+            losses = {}
+            losses.update(detector_losses)
+            losses.update(proposal_losses)
+            return losses, [], [], None
+        elif branch == "unsup_get_features_only":
+            return [], features, [], None
+        
+        elif branch == "supervised_for_moon":
+            # Region proposal network
+            proposals_rpn, proposal_losses = self.proposal_generator(
+                images, features, gt_instances
+            )
+
+            # # roi_head lower branch
+            _, detector_losses = self.roi_heads(
+                images, features, proposals_rpn, gt_instances, branch=branch
+            )
+
+            losses = {}
+            losses.update(detector_losses)
+            losses.update(proposal_losses)
+            return losses, features, [], None
 
         elif branch == "unsupervised":
             proposals_rpn, proposal_losses = self.proposal_generator(

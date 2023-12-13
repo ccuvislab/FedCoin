@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import torch
 import cv2
@@ -126,7 +127,7 @@ def load_FRCNNmodel(cfg, model_path):
     return model
 
 
-##-----------prediction
+# #-----------prediction
 
 
 
@@ -253,10 +254,10 @@ def drawbb(image_filename, target_metadata, bboxes_to_draw):
     cv2.imwrite('showbb.jpg', img)
 
     
+
     
-    
-    
-    
+
+
 def eval_metric_summary(test_data_loader,data_annotation, model_list, source_list,ratio, output_file ):
     source_num = len(source_list)
     
@@ -304,9 +305,9 @@ def eval_metric_summary(test_data_loader,data_annotation, model_list, source_lis
         count+=1
         
     f.close()
+
     
-    
-    
+
 def gen_pie_chart_list(eval_ck2b):
     pie_chart_list = []
     for index in eval_ck2b.columns:

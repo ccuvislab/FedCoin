@@ -80,6 +80,12 @@ def add_config(cfg):
 
     _C.MODEL.VGG.PRETRAIN = './vgg16_caffe.pth'
 
+    _C.MODEL.Global_PATH = './global.pth'
+    _C.MODEL.LOCAL_PREV_PATH = './local.pth'
+
+    _C.MODEL.GLOBAL_TRAINER = "pt"
+    _C.MODEL.LOCAL_TRAINER = "pt"
+
     # ---------------------------------------------------------------------------- #
     # ANCHOR Settings
     # ---------------------------------------------------------------------------- #

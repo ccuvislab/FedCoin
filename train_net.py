@@ -20,11 +20,13 @@ from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import PascalVOCDetectionEvaluator
-
+from detectron2.evaluation import COCOEvaluator
 from pt import add_config
 from pt.engine.trainer import PTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.engine.trainer_pseudo import PseudoTrainer
+from pt.engine.trainer_moon import MoonTrainer
+
 
 # to register
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
@@ -82,8 +84,8 @@ def main(args):
 
     if cfg.UNSUPNET.Trainer == "pt":
         Trainer = PTrainer
-#     elif cfg.UNSUPNET.Trainer == "pteval":
-#         Trainer = PTrainer
+    elif cfg.UNSUPNET.Trainer == "moon":
+        Trainer = MoonTrainer
     elif cfg.UNSUPNET.Trainer == "sourceonly":
         Trainer= PTrainer_sourceonly
     elif cfg.UNSUPNET.Trainer == "pseudo":
