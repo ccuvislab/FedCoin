@@ -1,3 +1,4 @@
+mychage/*
 tmp/*
 data/*
 output/*
@@ -9,6 +10,9 @@ keep_experiments/*
 core*
 results/*
 *.tar
+*.csv
+output_/*
+wandb/*
 ## PyTorch
 
 .mypy_cache

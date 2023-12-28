@@ -85,7 +85,16 @@ def add_config(cfg):
 
     _C.MODEL.GLOBAL_TRAINER = "pt"
     _C.MODEL.LOCAL_TRAINER = "pt"
-
+    # ---------------------------------------------------------------------------- #
+    # MOON Settings
+    # ---------------------------------------------------------------------------- #
+    _C.MOON = CN()
+    _C.MOON.CONTRASTIVE_Lcon_Enable = True
+    _C.MOON.CONTRASTIVE_MU = 1.0
+    _C.MOON.CONTRASTIVE_T = 0.5
+    _C.MOON.WANDB_Enable = True
+    _C.MOON.WANDB_Project_Name = "train_moon_net"
+    
     # ---------------------------------------------------------------------------- #
     # ANCHOR Settings
     # ---------------------------------------------------------------------------- #

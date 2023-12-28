@@ -14,18 +14,21 @@
 # limitations under the License.
 
 
+from detectron2.evaluation.coco_evaluation import COCOEvaluator
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import PascalVOCDetectionEvaluator
-from detectron2.evaluation import COCOEvaluator
+
 from pt import add_config
 from pt.engine.trainer import PTrainer
+# from pt.engine.trainer_moon import PTrainer_moon
+from pt.engine.trainer_moon import MoonTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.engine.trainer_pseudo import PseudoTrainer
-from pt.engine.trainer_moon import MoonTrainer
+
 
 
 # to register
@@ -84,7 +87,10 @@ def main(args):
 
     if cfg.UNSUPNET.Trainer == "pt":
         Trainer = PTrainer
+#     elif cfg.UNSUPNET.Trainer == "pteval":
+#         Trainer = PTrainer
     elif cfg.UNSUPNET.Trainer == "moon":
+        # Trainer= PTrainer_moon
         Trainer = MoonTrainer
     elif cfg.UNSUPNET.Trainer == "sourceonly":
         Trainer= PTrainer_sourceonly
@@ -138,4 +144,3 @@ if __name__ == "__main__":
         dist_url=args.dist_url,
         args=(args,),
     )
-

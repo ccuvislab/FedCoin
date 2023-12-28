@@ -19,7 +19,7 @@ from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.engine import DefaultTrainer
-from detectron2.evaluation import PascalVOCDetectionEvaluator
+from detectron2.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 
 
 

@@ -67,6 +67,7 @@ import copy
 import gc
 from detectron2.utils.registry import Registry
 
+import wandb; 
 
 # PTrainer
 class MoonTrainer(DefaultTrainer):
@@ -88,8 +89,7 @@ class MoonTrainer(DefaultTrainer):
         
         model_global = self.model_global
         model_local_prev = self.model_local_prev        
-        
-        model_local = self.model
+        model_local = self.model_local
 
         
         optimizer = self.build_optimizer(cfg, model_local)
@@ -122,6 +122,11 @@ class MoonTrainer(DefaultTrainer):
         self.cfg = cfg
 
         self.register_hooks(self.build_hooks())
+        ## wandb 初始化
+        # if self.cfg.MODEL.WANDB_Enable:
+        if self.cfg.MOON.WANDB_Enable:    
+            # wandb.init(project=self.cfg.MODEL.WANDB_Project_Name)
+            wandb.init(project=self.cfg.MOON.WANDB_Project_Name)
 
         # merlin to save memeory
         def inplace_relu(m):
@@ -190,7 +195,7 @@ class MoonTrainer(DefaultTrainer):
         print("load global model:{} ".format(model_global_path))
         self.model_global = self.get_trainer(global_trainer, cfg, model_global_path)
         self.model_local_prev = self.get_trainer(local_trainer, cfg, model_local_prev_path)
-        self.model = copy.deepcopy(self.model_global) # local model
+        self.model_local = copy.deepcopy(self.model_global) # local model
 
 
 
@@ -255,11 +260,32 @@ class MoonTrainer(DefaultTrainer):
         for unlabel_datum, lab_inst in zip(unlabled_data, label):
             unlabel_datum["instances"] = lab_inst
         return unlabled_data
+    
+
+ 
+    # implement Contrastive Learning Loss with Moon
+    # Zglobal, Z, Zprev are features from global, local, local_prev
+    def compute_Lcon(self, Z, Zglob, Zprev, temperature, mu):
+        cos=torch.nn.CosineSimilarity(dim=-1)
+        criterion = nn.CrossEntropyLoss().cuda()
+        Z_features=list(Z.values())[0]
+        Zglob_features=list(Zglob.values())[0]
+        Zprev_features=list(Zprev.values())[0]
+        posi = cos(Z_features, Zglob_features)
+        nega = cos(Z_features, Zprev_features)
+        logits = torch.cat((posi.reshape(-1,1), nega.reshape(-1,1)), dim=1)
+        logits /= temperature
+        
+        ##TODO: 剩下這兩行要解決：新的logits 算出來之後，要怎麼算loss 
+        labels = torch.zeros(logits.size(0)).cuda().long()
+        loss = mu * criterion(logits, labels)
+        ##
+        return loss
 
     # =====================================================
     # =================== Training Flow ===================
     # =====================================================
-
+    
     def run_step(self):
         self._trainer.iter = self.iter
         assert self.model.training, "[PTrainer] model was changed to eval mode!"
@@ -275,10 +301,12 @@ class MoonTrainer(DefaultTrainer):
 #-------------------------------
         # input both strong and weak supervised data into model
         label_data_q.extend(label_data_k)
-
+        #   feature_global = Zglobal
+        #   feature_local  = Z
+        #   feature_local_prev = Zprev
         label_data_q = self.resize(label_data_q)
         # record_dict, _, _, _ = self.model(label_data_q, branch="supervised")
-        record_dict, feature_local, _, _ = self.model(label_data_q, branch="supervised_for_moon")
+        record_dict, Z, _, _ = self.model(label_data_q, branch="supervised_for_moon")
 
         # weight losses
         loss_dict = {}
@@ -287,32 +315,50 @@ class MoonTrainer(DefaultTrainer):
                 loss_dict[key] = record_dict[key] * 0.0
             elif key[:4] == "loss":
                 loss_dict[key] = record_dict[key] * 1.0
-        losses = sum(loss_dict.values())
-
-        _, feature_global, _, _ = self.model_global(label_data_q, branch="get_features_only")
-        _, feature_local_prev, _, _ = self.model_local_prev(label_data_q, branch="get_features_only")
+        loss_sup = sum(loss_dict.values())
+        
+        with torch.no_grad(): # 讓 參數不要更新
+            # superorange = self.model_global(label_data_q, branch="unsup_get_features_only")
+            _, Zglob, _, _ = self.model_global(label_data_q, branch="unsup_get_features_only")
+            _, Zprev, _, _ = self.model_local_prev(label_data_q, branch="unsup_get_features_only")
 #--------------------------------------
 #
 #   !!! check if global & local_prev need to set "required_grad = False" !!!
 #          #-------------------------# 
 #          # compute moon loss here  #
 #          #-------------------------#
-#   feature_global
-#   feature_local
-#   feature_local_prev
-#
+#   feature_global = Zglobal
+#   feature_local  = Z
+#   feature_local_prev = Zprev
 #   loss_conv = xxxxxx
-#
-# losses = losses + loss_conv
+# losses = loss_sup + loss_conv
 #----------------------------------------
-
-
-
-      
+        # 計算 loss，若 cfg.CONTRASTIVE.Lcon_Enable，則啟用 moon loss
+        # if self.cfg.MODEL.CONTRASTIVE_Lcon_Enable:
+        if self.cfg.MOON.CONTRASTIVE_Lcon_Enable:
+            # losses 計算考慮 loss_sup + loss_conv
+            TEMPERATURE = self.cfg.MOON.CONTRASTIVE_T 
+            MU = self.cfg.MOON.CONTRASTIVE_MU
+            # compute_Lcon implement moon psudo code 12~17
+            loss_conv = self.compute_Lcon( Z, Zglob, Zprev, TEMPERATURE, MU )
+            losses = loss_sup + loss_conv
+            wandb_log_dict = { 'losses': losses, 'loss_sup': loss_sup, 'loss_conv': loss_conv, 'loss_dict': loss_dict}
+        else:
+            # 否則只有 supervised loss
+            losses = loss_sup
+            wandb_log_dict = { 'loss_dict': loss_dict, 'losses': losses, 'loss_sup': loss_sup }
+        
+        # 使用wandb log loss
+        if self.cfg.MOON.WANDB_Enable:
+            # wandb.watch(self.model_global, log="all")
+            # wandb.watch(self.model_local_prev, log="all")
+            wandb.log(wandb_log_dict)
+            # wandb.log({ 'loss_dict': loss_dict })
+            # wandb.log({ 'losses': losses, 'loss_sup': loss_sup })
+        
         metrics_dict = record_dict
         metrics_dict["data_time"] = data_time
         self._write_metrics(metrics_dict)
-
         self.optimizer.zero_grad()
         losses.backward()
         self.clip_gradient(self.model, 10.)

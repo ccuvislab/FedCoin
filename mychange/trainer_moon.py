@@ -67,7 +67,7 @@ from detectron2.utils.registry import Registry
 
 
 # PTrainer
-class PTrainer_sourceonly(DefaultTrainer):
+class PTrainer_moon(DefaultTrainer):
     def __init__(self, cfg):
         """
         Args:
@@ -223,9 +223,10 @@ class PTrainer_sourceonly(DefaultTrainer):
         label_data_q.extend(label_data_k)
 
         label_data_q = self.resize(label_data_q)
+        #TODO : 來看一下 record_dict = self.model() 分別是什麼
         record_dict, _, _, _ = self.model(label_data_q, branch="supervised")
     
-        # weight losses 
+        # weight losses
         loss_dict = {}
         for key in record_dict.keys():
             if key.split('_')[-1] == "adv":
@@ -233,7 +234,7 @@ class PTrainer_sourceonly(DefaultTrainer):
             elif key[:4] == "loss":
                 loss_dict[key] = record_dict[key] * 1.0
         losses = sum(loss_dict.values())
-#-------------------------------------- 從這邊開始修改
+#----------------------------        ## 在這之前，進行moon 改寫      ----------
       
         metrics_dict = record_dict
         metrics_dict["data_time"] = data_time
