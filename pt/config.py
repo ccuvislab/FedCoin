@@ -89,6 +89,7 @@ def add_config(cfg):
     # MOON Settings
     # ---------------------------------------------------------------------------- #
     _C.MOON = CN()
+    _C.MOON.ROUND = 0
     _C.MOON.CONTRASTIVE_Lcon_Enable = True
     _C.MOON.CONTRASTIVE_MU = 1.0
     _C.MOON.CONTRASTIVE_T = 0.5

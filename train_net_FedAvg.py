@@ -22,6 +22,7 @@ from detectron2.engine import default_argument_parser, default_setup, launch
 from pt import add_config
 from pt.engine.trainer import PTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
+from pt.engine.trainer_moon import MoonTrainer
 
 # to register
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
@@ -110,6 +111,8 @@ def main(args):
         Trainer = PTrainer
     elif cfg.UNSUPNET.Trainer == "sourceonly":
         Trainer= PTrainer_sourceonly    
+    elif cfg.UNSUPNET.Trainer == "moon":
+        Trainer= MoonTrainer
     else:
         raise ValueError("Trainer Name is not found.")
     
@@ -159,6 +162,18 @@ def main(args):
             for i,source_dataset in enumerate(source_dataset_list):
                 cfg = setup(args)
                 cfg.defrost()
+                if cfg.MOON.CONTRASTIVE_Lcon_Enable:
+
+                    cfg.MOON.ROUND = r
+                    #cfg.MODEL.GLOBAL_TRAINER = cfg.UNSUPNET.Trainer
+                    #cfg.MODEL.LOCAL_TRAINER = cfg.UNSUPNET.Trainer
+                    cfg.MODEL.Global_PATH = initial_model_path
+                    if r>0:
+                        previous_output_folder = os.path.join(output_folder,source_dataset+"_"+str(r-1))
+                        cfg.MODEL.LOCAL_PREV_PATH = os.path.join(previous_output_folder, "model_final.pth")
+                    else:
+                        cfg.MODEL.LOCAL_PREV_PATH = initial_model_path #won't be used, but need to be set
+                
                 cfg.MODEL.WEIGHTS = initial_model_path                
                 cfg.OUTPUT_DIR = os.path.join(output_folder,source_dataset+"_"+str(r))
                 print("output subdir={}".format(cfg.OUTPUT_DIR))

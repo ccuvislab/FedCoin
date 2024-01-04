@@ -109,10 +109,10 @@ class MoonTrainer(DefaultTrainer):
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
 
         # ensemble global local model
-        ensem_gl_model = EnsembleGLModel(model_global, model_local, model_local_prev)
+        #ensem_gl_model = EnsembleGLModel(model_global, model_local, model_local_prev)
 
         self.checkpointer = DetectionCheckpointer(
-            ensem_gl_model,
+            model_local,
             cfg.OUTPUT_DIR,
             optimizer=optimizer,
             scheduler=self.scheduler,
@@ -192,7 +192,7 @@ class MoonTrainer(DefaultTrainer):
         local_trainer = cfg.MODEL.LOCAL_TRAINER
         
 
-        print("load global model:{} ".format(model_global_path))
+        print("load global model:{} : {} ".format(global_trainer,model_global_path))
         self.model_global = self.get_trainer(global_trainer, cfg, model_global_path)
         self.model_local_prev = self.get_trainer(local_trainer, cfg, model_local_prev_path)
         self.model_local = copy.deepcopy(self.model_global) # local model
@@ -335,7 +335,7 @@ class MoonTrainer(DefaultTrainer):
 #----------------------------------------
         # 計算 loss，若 cfg.CONTRASTIVE.Lcon_Enable，則啟用 moon loss
         # if self.cfg.MODEL.CONTRASTIVE_Lcon_Enable:
-        if self.cfg.MOON.CONTRASTIVE_Lcon_Enable:
+        if self.cfg.MOON.CONTRASTIVE_Lcon_Enable and self.cfg.MOON.ROUND>0:
             # losses 計算考慮 loss_sup + loss_conv
             TEMPERATURE = self.cfg.MOON.CONTRASTIVE_T 
             MU = self.cfg.MOON.CONTRASTIVE_MU

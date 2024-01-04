@@ -24,13 +24,13 @@ def print_csv_format(results):
             logger.info("copypaste: Task: {}".format(task))
             logger.info("copypaste: " + ",".join([k[0] for k in important_res]))
             logger.info("copypaste: " + ",".join(["{0:.4f}".format(k[1]) for k in important_res]))
-            # 使用wandb log loss
-            if self.cfg.MOON.WANDB_Enable:
-                # wandb.watch(self.model_global, log="all")
-                # wandb.watch(self.model_local_prev, log="all")
-                wandb.log(wandb_log_dict)
-                # wandb.log({ 'loss_dict': loss_dict })
-                # wandb.log({ 'losses': losses, 'loss_sup': loss_sup })
+            # # 使用wandb log loss
+            # if self.cfg.MOON.WANDB_Enable:
+            #     # wandb.watch(self.model_global, log="all")
+            #     # wandb.watch(self.model_local_prev, log="all")
+            #     wandb.log(wandb_log_dict)
+            #     # wandb.log({ 'loss_dict': loss_dict })
+            #     # wandb.log({ 'losses': losses, 'loss_sup': loss_sup })
         else:
             logger.info(f"copypaste: {task}={res}")
 
