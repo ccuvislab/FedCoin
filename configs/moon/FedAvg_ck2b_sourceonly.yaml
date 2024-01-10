@@ -18,7 +18,7 @@ MOON:
   CONTRASTIVE_Lcon_Enable: True
   CONTRASTIVE_MU: 0.5
   CONTRASTIVE_T: 0.5
-  WANDB_Enable: True
+  WANDB_Enable: False
   WANDB_Project_Name: "FedAvg_moon_0103_skf2c"
 DATALOADER:
   NUM_WORKERS: 2
@@ -31,7 +31,7 @@ DATASETS:
 #  TRAIN_UNLABEL: ("VOC2007_bddtrain1",)
   TEST: ("VOC2007_cityval1",)
 UNSUPNET:
-  Trainer: "moon"
+  Trainer: "sourceonly"
   TEACHER_UPDATE_ITER: 1
   BURN_UP_STEP: 0
   EMA_KEEP_RATE: 0.9996

@@ -89,22 +89,22 @@ class MoonTrainer(DefaultTrainer):
         
         model_global = self.model_global
         model_local_prev = self.model_local_prev        
-        model_local = self.model_local
+        model = self.model
 
         
-        optimizer = self.build_optimizer(cfg, model_local)
+        optimizer = self.build_optimizer(cfg, model)
         # from IPython import embed
         # embed()
 
         # For training, wrap with DDP. But don't need this for inference.
         if comm.get_world_size() > 1:
-            model_local = DistributedDataParallel(
-                model_local, device_ids=[comm.get_local_rank()], broadcast_buffers=False
+            model = DistributedDataParallel(
+                model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
             )
 
         TrainerBase.__init__(self)
         self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
-            model_local, data_loader, optimizer
+            model, data_loader, optimizer
         )
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
 
@@ -112,7 +112,7 @@ class MoonTrainer(DefaultTrainer):
         #ensem_gl_model = EnsembleGLModel(model_global, model_local, model_local_prev)
 
         self.checkpointer = DetectionCheckpointer(
-            model_local,
+            model,
             cfg.OUTPUT_DIR,
             optimizer=optimizer,
             scheduler=self.scheduler,
@@ -195,7 +195,7 @@ class MoonTrainer(DefaultTrainer):
         print("load global model:{} : {} ".format(global_trainer,model_global_path))
         self.model_global = self.get_trainer(global_trainer, cfg, model_global_path)
         self.model_local_prev = self.get_trainer(local_trainer, cfg, model_local_prev_path)
-        self.model_local = copy.deepcopy(self.model_global) # local model
+        self.model = copy.deepcopy(self.model_global) # local model
 
 
 
