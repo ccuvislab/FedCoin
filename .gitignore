@@ -13,6 +13,10 @@ results/*
 *.csv
 output_/*
 wandb/*
+output
+wandb
+keep_experiments
+data
 ## PyTorch
 
 .mypy_cache
