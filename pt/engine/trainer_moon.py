@@ -39,9 +39,9 @@ from pt.data.build import (
 )
 from pt.data.dataset_mapper import DatasetMapperTwoCropSeparate
 from pt.engine.hooks import LossEvalHook
-from pt.engine.trainer import PTrainer
+#from pt.engine.trainer import PTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
-from pt.modeling.meta_arch.global_local import EnsembleGLModel
+#from pt.modeling.meta_arch.global_local import EnsembleGLModel
 from pt.modeling.build import build_my_model
 from pt.checkpoint.detection_checkpoint import DetectionTSCheckpointer
 from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
@@ -77,19 +77,24 @@ class MoonTrainer(DefaultTrainer):
             cfg (CfgNode):
         Use the custom checkpointer, which loads other backbone models
         with matching heuristics.
-        """
-        self.cfg = cfg
+        """        
         # cfg = self.auto_scale_workers(cfg, cfg.SOLVER.IMG_PER_BATCH_LABEL)
         data_loader = self.build_train_loader(cfg)
 
         # create a global & local model
-        # model = self.build_model(cfg)
-        self.build_moon_model()
+        model = self.build_model(cfg)
+        model_global = self.build_model(cfg)
+        self.model_global = model_global
+        model_local_prev = self.build_model(cfg)
+        self.model_local_prev = model_local_prev
+        #--------mark temporary-----------
+        # self.build_moon_model()
         
         
-        model_global = self.model_global
-        model_local_prev = self.model_local_prev        
-        model = self.model
+        # model_global = self.model_global
+        # model_local_prev = self.model_local_prev        
+        # model = self.model_local
+        #---------------------------------
 
         
         optimizer = self.build_optimizer(cfg, model)
@@ -137,65 +142,65 @@ class MoonTrainer(DefaultTrainer):
         self.model.apply(inplace_relu)
     
 
-    def load_SOmodel(self, cfg, model_path):
-        print("load source-only pt model")
-        Trainer= PTrainer_sourceonly   
-        # if cfg.FEDSET.DYNAMIC: 
-        #     fedma_model = torch.load(model_path)
-        #     backbone_dim = FedUtils.get_backbone_shape(fedma_model)
+    # def load_SOmodel(self, cfg, model_path):
+    #     print("load source-only pt model")
+    #     Trainer= PTrainer_sourceonly   
+    #     # if cfg.FEDSET.DYNAMIC: 
+    #     #     fedma_model = torch.load(model_path)
+    #     #     backbone_dim = FedUtils.get_backbone_shape(fedma_model)
             
-        #     cfg.defrost()
-        #     #cfg.MODEL.WEIGHTS = model_path                    
-        #     cfg.BACKBONE_DIM = backbone_dim        
-        #     cfg.freeze
+    #     #     cfg.defrost()
+    #     #     #cfg.MODEL.WEIGHTS = model_path                    
+    #     #     cfg.BACKBONE_DIM = backbone_dim        
+    #     #     cfg.freeze
             
-        #     model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
-        # else:
-        model = Trainer.build_model(cfg) 
-        DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
-        return model
+    #     #     model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
+    #     # else:
+    #     model = Trainer.build_model(cfg) 
+    #     DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
+    #     return model
     
-    def load_TSmodel(self,cfg, model_path):
-        Trainer =PTrainer
-        model = Trainer.build_model(cfg)
-        model_teacher = Trainer.build_model(cfg)
-        ensem_ts_model = EnsembleTSModel(model_teacher, model)    
-        DetectionCheckpointer(ensem_ts_model).resume_or_load(model_path, resume=False)
-        return ensem_ts_model.modelTeacher
+    # def load_TSmodel(self,cfg, model_path):
+    #     Trainer =PTrainer
+    #     model = Trainer.build_model(cfg)
+    #     model_teacher = Trainer.build_model(cfg)
+    #     ensem_ts_model = EnsembleTSModel(model_teacher, model)    
+    #     DetectionCheckpointer(ensem_ts_model).resume_or_load(model_path, resume=False)
+    #     return ensem_ts_model.modelTeacher
     
-    def load_FRCNNmodel(self,cfg, model_path): 
-        print("load FRCNN model")
-        Trainer =DefaultTrainer
-        model = Trainer.build_model(cfg)    
-        DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
-        return model
+    # def load_FRCNNmodel(self,cfg, model_path): 
+    #     print("load FRCNN model")
+    #     Trainer =DefaultTrainer
+    #     model = Trainer.build_model(cfg)    
+    #     DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
+    #     return model
 
         
-    def get_trainer(self, trainer_name, cfg, model_path):
-        if trainer_name == "pt":
-            return self.load_TSmodel(cfg, model_path)  
-        elif trainer_name == "sourceonly":
-            return self.load_SOmodel(cfg, model_path)              
-        elif trainer_name == "default":
-            return self.load_FRCNNmodel(cfg, model_path)       
-        else:
-            raise ValueError("Trainer Name is not found.")
+    # def get_trainer(self, trainer_name, cfg, model_path):
+    #     if trainer_name == "pt":
+    #         return self.load_TSmodel(cfg, model_path)  
+    #     elif trainer_name == "sourceonly":
+    #         return self.load_SOmodel(cfg, model_path)              
+    #     elif trainer_name == "default":
+    #         return self.load_FRCNNmodel(cfg, model_path)       
+    #     else:
+    #         raise ValueError("Trainer Name is not found.")
         
-    @torch.no_grad()
-    def build_moon_model(self):
-        cfg = self.cfg
-        #-----load model weight
-        model_global_path = cfg.MODEL.Global_PATH
-        model_local_prev_path = cfg.MODEL.LOCAL_PREV_PATH
+    # @torch.no_grad()
+    # def build_moon_model(self):
+    #     cfg = self.cfg
+    #     #-----load model weight
+    #     model_global_path = cfg.MODEL.Global_PATH
+    #     model_local_prev_path = cfg.MODEL.LOCAL_PREV_PATH
         
-        global_trainer = cfg.MODEL.GLOBAL_TRAINER
-        local_trainer = cfg.MODEL.LOCAL_TRAINER
+    #     global_trainer = cfg.MODEL.GLOBAL_TRAINER
+    #     local_trainer = cfg.MODEL.LOCAL_TRAINER
         
 
-        print("load global model:{} : {} ".format(global_trainer,model_global_path))
-        self.model_global = self.get_trainer(global_trainer, cfg, model_global_path)
-        self.model_local_prev = self.get_trainer(local_trainer, cfg, model_local_prev_path)
-        self.model = copy.deepcopy(self.model_global) # local model
+    #     print("load global model:{} : {} ".format(global_trainer,model_global_path))
+    #     self.model_global = self.get_trainer(global_trainer, cfg, model_global_path)
+    #     self.model_local_prev = self.get_trainer(local_trainer, cfg, model_local_prev_path)
+    #     self.model_local = copy.deepcopy(self.model_global) # local model
 
 
 
@@ -440,8 +445,10 @@ class MoonTrainer(DefaultTrainer):
         if isinstance(self.model, DistributedDataParallel):
             # broadcast loaded data/model from the first rank, because other
             # machines may not have access to the checkpoint file
-            if TORCH_VERSION >= (1, 7):
-                self.model._sync_params_and_buffers()
+            # if TORCH_VERSION >= (1, 7):
+            #     if comm.get_world_size() > 1:
+            #         self.model.module._sync_params_and_buffers()
+            #     self.model.module._sync_params_and_buffers()
             self.start_iter = comm.all_gather(self.start_iter)[0]
 
     def build_hooks(self):

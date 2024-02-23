@@ -160,20 +160,27 @@ def main(args):
         else:
             
             for i,source_dataset in enumerate(source_dataset_list):
+                torch.cuda.empty_cache()
                 cfg = setup(args)
                 cfg.defrost()
+
+
+                cfg.MODEL.Global_PATH = initial_model_path
                 if cfg.MOON.CONTRASTIVE_Lcon_Enable:
 
                     cfg.MOON.ROUND = r
                     #cfg.MODEL.GLOBAL_TRAINER = cfg.UNSUPNET.Trainer
                     #cfg.MODEL.LOCAL_TRAINER = cfg.UNSUPNET.Trainer
-                    cfg.MODEL.Global_PATH = initial_model_path
+                    #cfg.MODEL.Global_PATH = initial_model_path
                     if r>0:
                         previous_output_folder = os.path.join(output_folder,source_dataset+"_"+str(r-1))
                         cfg.MODEL.LOCAL_PREV_PATH = os.path.join(previous_output_folder, "model_final.pth")
                     else:
                         cfg.MODEL.LOCAL_PREV_PATH = initial_model_path #won't be used, but need to be set
-                
+                        
+                else:
+                    cfg.MODEL.LOCAL_PREV_PATH = initial_model_path #won't be used, but need to be set
+
                 cfg.MODEL.WEIGHTS = initial_model_path                
                 cfg.OUTPUT_DIR = os.path.join(output_folder,source_dataset+"_"+str(r))
                 print("output subdir={}".format(cfg.OUTPUT_DIR))

@@ -15,8 +15,8 @@ DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
   CROSS_DATASET: True
-  TRAIN_LABEL: ("VOC2007_citytrain1",)
-  TEST: ("VOC2007_bddvalsmall",)
+  TRAIN_LABEL: ("VOC2007_citytrain",)
+  TEST: ("VOC2007_bddval8",)
 UNSUPNET:
   Trainer: "sourceonly"
   TEACHER_UPDATE_ITER: 1

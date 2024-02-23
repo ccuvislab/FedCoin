@@ -272,7 +272,25 @@ def new_fedma_model_generator(cfg, backbone_dim, model_list, vgg):
 
         initial_backbone_list[model_idx].load_state_dict(new_fedma_dict)  
     return initial_backbone_list
+
+def load_SOmodel( cfg, model_path):
+    print("load source-only pt model")
+    Trainer= PTrainer_sourceonly   
+    if cfg.FEDSET.DYNAMIC: 
+        fedma_model = torch.load(model_path)
+        backbone_dim = FedUtils.get_backbone_shape(fedma_model)
         
+        cfg.defrost()
+        #cfg.MODEL.WEIGHTS = model_path                    
+        cfg.BACKBONE_DIM = backbone_dim        
+        cfg.freeze
+        
+        model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
+    else:
+        model = Trainer.build_model(cfg) 
+    DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
+
+    return model        
 def load_FRCNNmodel_cpu(cfg, model_path): 
     print("load FRCNN model")
     Trainer =DefaultTrainer
@@ -287,14 +305,16 @@ def load_TSmodel_cpu(cfg, model_path):
     DetectionCheckpointer(ensem_ts_model).resume_or_load(model_path, resume=False)
     return ensem_ts_model.modelStudent.cpu()
 
+def get_trainer( trainer_name, cfg, model_path):
+        if trainer_name == "pt":
+            return load_TSmodel_cpu(cfg, model_path)  
+        elif trainer_name == "sourceonly":
+            return load_SOmodel(cfg, model_path)              
+        elif trainer_name == "default":
+            return load_FRCNNmodel_cpu(cfg, model_path)       
+        else:
+            raise ValueError("Trainer Name is not found.")
 
-def get_trainer(trainer_name, cfg, model_path):
-    if trainer_name == "pt":
-        return load_TSmodel_cpu(cfg, model_path)       
-    elif trainer_name == "default":
-        return load_FRCNNmodel_cpu(cfg, model_path)       
-    else:
-        raise ValueError("Trainer Name is not found.")
 
 
 
