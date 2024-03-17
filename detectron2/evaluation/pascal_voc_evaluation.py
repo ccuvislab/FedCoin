@@ -118,7 +118,9 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                     )
                     aps[thresh].append(ap * 100)
                     #print(ap*100)
-
+                # waue : print APs of each class 
+                class_mAP = {iou: aps[iou][cls_id] for iou in range(50, 100, 5)}
+                print(f"AP for class {cls_name}: {class_mAP}")
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
       

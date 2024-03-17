@@ -95,8 +95,20 @@ def main(args):
         raise IndexError("models number is not consistent with dataset number")
     else:
         parties = len(source_dataset_list)
-        
-    model_list=[ get_trainer(teacher_trainer, cfg, model_teacher_path) for model_teacher_path in model_path_list]
+    
+    if cfg.FEDSET.DYNAMIC_CLASS is not None:
+        model_list =[]
+
+        for client_id,dynamic_class_num in enumerate(cfg.FEDSET.DYNAMIC_CLASS):
+            print(cfg.FEDSET.DYNAMIC)
+            cfg.defrost()
+            cfg.MODEL.ROI_HEADS.NUM_CLASSES = dynamic_class_num
+            cfg.freeze()
+            
+            model_list.append(get_trainer(teacher_trainer, cfg, model_path_list[client_id]))
+
+    else:
+        model_list=[ get_trainer(teacher_trainer, cfg, model_teacher_path) for model_teacher_path in model_path_list]
         
     #-------------------start FedMA-----------------
     ### single pass 
@@ -106,7 +118,12 @@ def main(args):
     nets, model_meta_data, layer_type = init_vgg16_rcnns(num_workers)
 
     
-
+    # for model_idx, model in enumerate(model_list):
+    #     print(len(model.state_dict()['roi_heads.box_predictor.cls_score.weight']))
+    #     print(model.state_dict()['backbone.vgg_block3.0.conv2.bias'].shape)
+    #     print(model.state_dict()['backbone.vgg_block3.0.conv2.weight'].shape)
+        
+                                 
     NUM_VGG_LAYERS = cfg.FEDSET.NUM_VGG_LAYERS
     VGG_CONV3_IDX = cfg.FEDSET.VGG_CONV3_IDX
     
@@ -140,8 +157,19 @@ def main(args):
 
         for vgg, state_dict in zip(matched_vggs, vgg_state_dicts):
             vgg.load_state_dict(state_dict)
-            
+
+    #     for model_idx, model in enumerate(model_list):
+    # #     print(len(model.state_dict()['roi_heads.box_predictor.cls_score.weight']))
+    #         print(model.state_dict()['backbone.vgg_block3.0.conv2.bias'].shape)
+    #         print(model.state_dict()['backbone.vgg_block3.0.conv2.weight'].shape)
+                    
         initial_model_list = new_fedma_model_generator(cfg, backbone_dim, model_list, vgg)
+    #     for model_idx, model in enumerate(model_list):
+    # #     print(len(model.state_dict()['roi_heads.box_predictor.cls_score.weight']))
+    #         print(model.state_dict()['backbone.vgg_block3.0.conv2.bias'].shape)
+    #         print(model.state_dict()['backbone.vgg_block3.0.conv2.weight'].shape)
+
+
         # save model weight by different clients
         for model_idx, model_after_fedma in enumerate(initial_model_list):            
             model_save_name  = os.path.join(output_folder,'FedMA_{}_{}.pth'.format(source_dataset_list[model_idx],vgg_layer_idx))
@@ -190,6 +218,10 @@ def main(args):
                 cfg.DATASETS.TRAIN_LABEL=source_dataset
                 print("current source={}".format(source_dataset))
                 cfg.BACKBONE_DIM = backbone_dim
+                cfg.FEDSET.DYNAMIC=True
+                if cfg.FEDSET.DYNAMIC_CLASS is not None:
+                    cfg.MODEL.ROI_HEADS.NUM_CLASSES = cfg.FEDSET.DYNAMIC_CLASS[i]
+                    
                 cfg.freeze()
                 
                 
@@ -203,7 +235,7 @@ def main(args):
                 trainer.train()
                 model_list[i]=trainer.model
                 
-    
+                                                            
     # average the last model        
     wk_ratio =  [1] * parties 
     wk_ratio = [x / parties for x in wk_ratio]        
@@ -213,7 +245,8 @@ def main(args):
     for i in range(len(model_list)):
         model_list[i] = model_list[i].to(device)
 
-    avg_model = FedUtils.avgWeight(model_list, wk_ratio)
+    keyword = "backbone" if cfg.FEDSET.ONLY_BACKBONE else None
+    avg_model = FedUtils.avgWeight(model_list, wk_ratio,keyword)
 
     # save model_list
 
@@ -247,17 +280,34 @@ def new_fedma_model_generator(cfg, backbone_dim, model_list, vgg):
         fedma_vgg_key.append('features.{}.bias'.format(conv_i))
         
     # initial model structure
-    Trainer= PTrainer_sourceonly
-    initial_backbone = Trainer.build_model(cfg,backbone_dim,False) 
+    if cfg.FEDSET.DYNAMIC_CLASS is not None:
+    
+        initial_backbone_list = []
+        for dynamic_class_num in cfg.FEDSET.DYNAMIC_CLASS:        
+            cfg.defrost()
+            cfg.MODEL.ROI_HEADS.NUM_CLASSES = dynamic_class_num
+            cfg.freeze()
+            Trainer= PTrainer_sourceonly
+            initial_backbone = Trainer.build_model(cfg,backbone_dim,False) 
+            #print(initial_backbone.state_dict()['backbone.vgg_block3.0.conv2.weight'].shape)
+            # detectron structure model key
+            detectron_vgg_key_map = []
+            for key,value in initial_backbone.backbone.state_dict().items():
+                detectron_vgg_key_map.append(key)
+            initial_backbone_list.append(copy.deepcopy(initial_backbone))
+    else:
+        Trainer= PTrainer_sourceonly
+        initial_backbone = Trainer.build_model(cfg,backbone_dim,False) 
+        #print(initial_backbone.state_dict()['backbone.vgg_block3.0.conv2.weight'].shape)
 
-    # detectron structure model key
-    detectron_vgg_key_map = []
-    for key,value in initial_backbone.backbone.state_dict().items():
-        detectron_vgg_key_map.append(key)
-        
-    # craete n initial models
-    initial_backbone_list = [copy.deepcopy(initial_backbone)for i in range(len(model_list))]
-        
+
+        # detectron structure model key
+        detectron_vgg_key_map = []
+        for key,value in initial_backbone.backbone.state_dict().items():
+            detectron_vgg_key_map.append(key)
+        # craete n initial models
+        initial_backbone_list = [copy.deepcopy(initial_backbone)for i in range(len(model_list))]
+    
     for model_idx, model_initial in enumerate(model_list):
         new_fedma_dict = OrderedDict()
         #copy backbone part from fedma model
@@ -283,7 +333,7 @@ def load_SOmodel( cfg, model_path):
         cfg.defrost()
         #cfg.MODEL.WEIGHTS = model_path                    
         cfg.BACKBONE_DIM = backbone_dim        
-        cfg.freeze
+        cfg.freeze()
         
         model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
     else:

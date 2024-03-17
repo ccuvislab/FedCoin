@@ -224,7 +224,8 @@ def main(args):
         # put avg model to initial_weight        
         print("save avg model to {}".format(initial_model_path))
 
-   
+
+
 
 
 if __name__ == "__main__":

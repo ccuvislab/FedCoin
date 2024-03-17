@@ -36,6 +36,8 @@ def add_config(cfg):
     _C.FEDSET.THREAD=False
     _C.FEDSET.NUM_VGG_LAYERS = 13
     _C.FEDSET.VGG_CONV3_IDX = 6
+    _C.FEDSET.DYNAMIC_CLASS = None
+    _C.FEDSET.ONLY_BACKBONE = False
     
     # ---------------------------------------------------------------------------- #
     # Multi-teacher Settings

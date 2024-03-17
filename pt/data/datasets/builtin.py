@@ -138,6 +138,7 @@ def register_all_pascal_voc(root):
        
         ("VOC2007_bddtrain8", 'data/VOC2007_bddtrain', "train", 8),
         ("VOC2007_bddval8", 'data/VOC2007_bddval', "val", 8),
+        ("VOC2007_bddval8small", 'data/VOC2007_bddval', "val_small", 8),
         ("VOC2007_bddtrain1", 'data/VOC2007_bddtrain', "train", 1),
         ("VOC2007_bddval1", 'data/VOC2007_bddval', "val", 1),
         ("VOC2007_bddvalsmall", 'data/VOC2007_bddval', "val_small", 1),

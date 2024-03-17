@@ -22,6 +22,10 @@ from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import PascalVOCDetectionEvaluator
 from detectron2.evaluation import COCOEvaluator
 from pt import add_config
+from FLpkg import add_config as FL_add_config
+from FLpkg import FedUtils
+import torch
+
 from pt.engine.trainer import PTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.engine.trainer_pseudo import PseudoTrainer
@@ -67,6 +71,7 @@ def setup(args):
     """
     cfg = get_cfg()
     add_config(cfg)
+    FL_add_config(cfg)
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
     cfg.freeze()
@@ -98,6 +103,9 @@ def main(args):
     if args.eval_only:
         
         if cfg.UNSUPNET.Trainer in ["pt"]:
+            
+
+            
             model = Trainer.build_model(cfg)
             model_teacher = Trainer.build_model(cfg)
             ensem_ts_model = EnsembleTSModel(model_teacher, model)
@@ -113,7 +121,21 @@ def main(args):
 #             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
 #             res = Trainer.test(cfg, model)
         else:
-            model = Trainer.build_model(cfg)
+
+            if cfg.FEDSET.DYNAMIC: 
+                fedma_model = torch.load(cfg.MODEL.WEIGHTS)
+                backbone_dim = FedUtils.get_backbone_shape(fedma_model)
+                
+                cfg.defrost()
+                #cfg.MODEL.WEIGHTS = model_path                    
+                cfg.BACKBONE_DIM = backbone_dim        
+                cfg.freeze()
+                
+                model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
+            else:
+                model = Trainer.build_model(cfg) 
+
+            #model = Trainer.build_model(cfg)
             DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
                 cfg.MODEL.WEIGHTS, resume=args.resume
             )
