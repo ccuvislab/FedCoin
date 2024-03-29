@@ -194,6 +194,14 @@ def main(args):
                     cfg.BACKBONE_DIM = backbone_dim
                 
                 cfg.freeze()
+
+
+                if cfg.FEDSET.DYNAMIC_CLASS is not None:        
+
+                    print(cfg.FEDSET.DYNAMIC_CLASS[i])                
+                    cfg.defrost()
+                    cfg.MODEL.ROI_HEADS.NUM_CLASSES = cfg.FEDSET.DYNAMIC_CLASS[i]
+                    cfg.freeze()
                 
                 
                 trainer = Trainer(cfg)
@@ -212,9 +220,12 @@ def main(args):
         device = torch.device('cuda:0') 
         for i in range(len(model_list)):
             model_list[i] = model_list[i].to(device)
+        
+        keyword="backbone" if cfg.FEDSET.BACKBONE_ONLY else None
+        
             
-    
-        avg_model = FedUtils.avgWeight(model_list, wk_ratio)
+        avg_model = FedUtils.avgWeight(model_list, wk_ratio,keyword)
+        
         
         # save model_list
         

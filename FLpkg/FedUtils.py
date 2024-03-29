@@ -1,4 +1,4 @@
-def avgWeight(model_list,ratio_list):
+def avgWeight(model_list,ratio_list,keywords=None):
     parties = len(model_list)
     model_tmp=[None] * parties
     #optims_tmp=[None] * parties
@@ -10,14 +10,15 @@ def avgWeight(model_list,ratio_list):
 
 
     for key in model_tmp[0]:    
-        #print(key)
-        model_avg = 0
+        if (keywords is None) or (keywords in key):
+            #print(key)
+            model_avg = 0
 
-        for idx, model_tmp_content in enumerate(model_tmp):     # add each model              
-            model_avg += ratio_list[idx] * model_tmp_content[key]
-            
-        for i in range(len(model_tmp)):  #copy to each model            
-            model_tmp[i][key] = model_avg
+            for idx, model_tmp_content in enumerate(model_tmp):     # add each model              
+                model_avg += ratio_list[idx] * model_tmp_content[key]
+                
+            for i in range(len(model_tmp)):  #copy to each model            
+                model_tmp[i][key] = model_avg
     for i in range(len(model_list)):    
         model_list[i].load_state_dict(model_tmp[i])
         
