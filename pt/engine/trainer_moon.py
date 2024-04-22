@@ -28,20 +28,27 @@ from detectron2.engine import DefaultTrainer, SimpleTrainer, TrainerBase
 from detectron2.engine.train_loop import AMPTrainer
 from detectron2.utils.events import EventStorage
 from detectron2.evaluation import COCOEvaluator, verify_results
-from detectron2.evaluation import PascalVOCDetectionEvaluator
+
+# from detectron2.evaluation import PascalVOCDetectionEvaluator
+from pt.evaluation.pascal_voc_evaluation_mclass import (
+    PascalVOCDetectionEvaluator,
+)  # waue
+
 from detectron2.data.dataset_mapper import DatasetMapper
 from detectron2.engine import hooks
 from detectron2.structures.boxes import Boxes
 
 from pt.data.build import (
-    build_detection_test_loader,    
-    build_detection_sourceonly_loader_two_crops
+    build_detection_test_loader,
+    build_detection_sourceonly_loader_two_crops,
 )
 from pt.data.dataset_mapper import DatasetMapperTwoCropSeparate
 from pt.engine.hooks import LossEvalHook
-#from pt.engine.trainer import PTrainer
+
+# from pt.engine.trainer import PTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
-#from pt.modeling.meta_arch.global_local import EnsembleGLModel
+
+# from pt.modeling.meta_arch.global_local import EnsembleGLModel
 from pt.modeling.build import build_my_model
 from pt.checkpoint.detection_checkpoint import DetectionTSCheckpointer
 from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
@@ -50,7 +57,11 @@ from detectron2.utils.env import TORCH_VERSION
 from detectron2.modeling.anchor_generator import DefaultAnchorGenerator
 from detectron2.utils.visualizer import Visualizer
 from detectron2.data import detection_utils as utils
-from detectron2.data import DatasetCatalog, MetadataCatalog, build_detection_train_loader
+from detectron2.data import (
+    DatasetCatalog,
+    MetadataCatalog,
+    build_detection_train_loader,
+)
 
 from detectron2.data import detection_utils
 from PIL import Image
@@ -66,8 +77,8 @@ import random
 import copy
 import gc
 from detectron2.utils.registry import Registry
+import wandb
 
-import wandb; 
 
 # PTrainer
 class MoonTrainer(DefaultTrainer):
@@ -77,7 +88,7 @@ class MoonTrainer(DefaultTrainer):
             cfg (CfgNode):
         Use the custom checkpointer, which loads other backbone models
         with matching heuristics.
-        """        
+        """
         # cfg = self.auto_scale_workers(cfg, cfg.SOLVER.IMG_PER_BATCH_LABEL)
         data_loader = self.build_train_loader(cfg)
 
@@ -87,16 +98,14 @@ class MoonTrainer(DefaultTrainer):
         self.model_global = model_global
         model_local_prev = self.build_model(cfg)
         self.model_local_prev = model_local_prev
-        #--------mark temporary-----------
+        # --------mark temporary-----------
         # self.build_moon_model()
-        
-        
-        # model_global = self.model_global
-        # model_local_prev = self.model_local_prev        
-        # model = self.model_local
-        #---------------------------------
 
-        
+        # model_global = self.model_global
+        # model_local_prev = self.model_local_prev
+        # model = self.model_local
+        # ---------------------------------
+
         optimizer = self.build_optimizer(cfg, model)
         # from IPython import embed
         # embed()
@@ -114,7 +123,7 @@ class MoonTrainer(DefaultTrainer):
         self.scheduler = self.build_lr_scheduler(cfg, optimizer)
 
         # ensemble global local model
-        #ensem_gl_model = EnsembleGLModel(model_global, model_local, model_local_prev)
+        # ensem_gl_model = EnsembleGLModel(model_global, model_local, model_local_prev)
 
         self.checkpointer = DetectionCheckpointer(
             model,
@@ -129,80 +138,76 @@ class MoonTrainer(DefaultTrainer):
         self.register_hooks(self.build_hooks())
         ## wandb 初始化
         # if self.cfg.MODEL.WANDB_Enable:
-        if self.cfg.MOON.WANDB_Enable:    
+        if self.cfg.MOON.WANDB_Enable:
             # wandb.init(project=self.cfg.MODEL.WANDB_Project_Name)
-            wandb.init(project=self.cfg.MOON.WANDB_Project_Name)
+            if not wandb.run:
+                wandb.init(project=self.cfg.MOON.WANDB_Project_Name)
 
         # merlin to save memeory
         def inplace_relu(m):
             classname = m.__class__.__name__
-            if classname.find('ReLU') != -1:
+            if classname.find("ReLU") != -1:
                 m.inplace = True
 
         self.model.apply(inplace_relu)
-    
 
     # def load_SOmodel(self, cfg, model_path):
     #     print("load source-only pt model")
-    #     Trainer= PTrainer_sourceonly   
-    #     # if cfg.FEDSET.DYNAMIC: 
+    #     Trainer= PTrainer_sourceonly
+    #     # if cfg.FEDSET.DYNAMIC:
     #     #     fedma_model = torch.load(model_path)
     #     #     backbone_dim = FedUtils.get_backbone_shape(fedma_model)
-            
+
     #     #     cfg.defrost()
-    #     #     #cfg.MODEL.WEIGHTS = model_path                    
-    #     #     cfg.BACKBONE_DIM = backbone_dim        
+    #     #     #cfg.MODEL.WEIGHTS = model_path
+    #     #     cfg.BACKBONE_DIM = backbone_dim
     #     #     cfg.freeze
-            
+
     #     #     model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
     #     # else:
-    #     model = Trainer.build_model(cfg) 
+    #     model = Trainer.build_model(cfg)
     #     DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
     #     return model
-    
+
     # def load_TSmodel(self,cfg, model_path):
     #     Trainer =PTrainer
     #     model = Trainer.build_model(cfg)
     #     model_teacher = Trainer.build_model(cfg)
-    #     ensem_ts_model = EnsembleTSModel(model_teacher, model)    
+    #     ensem_ts_model = EnsembleTSModel(model_teacher, model)
     #     DetectionCheckpointer(ensem_ts_model).resume_or_load(model_path, resume=False)
     #     return ensem_ts_model.modelTeacher
-    
-    # def load_FRCNNmodel(self,cfg, model_path): 
+
+    # def load_FRCNNmodel(self,cfg, model_path):
     #     print("load FRCNN model")
     #     Trainer =DefaultTrainer
-    #     model = Trainer.build_model(cfg)    
+    #     model = Trainer.build_model(cfg)
     #     DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
     #     return model
 
-        
     # def get_trainer(self, trainer_name, cfg, model_path):
     #     if trainer_name == "pt":
-    #         return self.load_TSmodel(cfg, model_path)  
+    #         return self.load_TSmodel(cfg, model_path)
     #     elif trainer_name == "sourceonly":
-    #         return self.load_SOmodel(cfg, model_path)              
+    #         return self.load_SOmodel(cfg, model_path)
     #     elif trainer_name == "default":
-    #         return self.load_FRCNNmodel(cfg, model_path)       
+    #         return self.load_FRCNNmodel(cfg, model_path)
     #     else:
     #         raise ValueError("Trainer Name is not found.")
-        
+
     # @torch.no_grad()
     # def build_moon_model(self):
     #     cfg = self.cfg
     #     #-----load model weight
     #     model_global_path = cfg.MODEL.Global_PATH
     #     model_local_prev_path = cfg.MODEL.LOCAL_PREV_PATH
-        
+
     #     global_trainer = cfg.MODEL.GLOBAL_TRAINER
     #     local_trainer = cfg.MODEL.LOCAL_TRAINER
-        
 
     #     print("load global model:{} : {} ".format(global_trainer,model_global_path))
     #     self.model_global = self.get_trainer(global_trainer, cfg, model_global_path)
     #     self.model_local_prev = self.get_trainer(local_trainer, cfg, model_local_prev_path)
     #     self.model_local = copy.deepcopy(self.model_global) # local model
-
-
 
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
@@ -212,7 +217,8 @@ class MoonTrainer(DefaultTrainer):
         if cfg.TEST.EVALUATOR == "COCOeval":
             return COCOEvaluator(dataset_name, cfg, True, output_folder)
         if cfg.TEST.EVALUATOR == "VOCeval":
-            return PascalVOCDetectionEvaluator(dataset_name)
+            # return PascalVOCDetectionEvaluator(dataset_name) # waue
+            return PascalVOCDetectionEvaluator(dataset_name, cfg)  # waue
         else:
             raise ValueError("Unknown test evaluator.")
 
@@ -243,7 +249,7 @@ class MoonTrainer(DefaultTrainer):
                 self.before_train()
 
                 for self.iter in range(start_iter, max_iter):
-                    #print("iter:{} device:{}".format(self.iter, self.cfg.MODEL.DEVICE))
+                    # print("iter:{} device:{}".format(self.iter, self.cfg.MODEL.DEVICE))
                     self.before_step()
                     with torch.autograd.set_detect_anomaly(True):
                         self.run_step()
@@ -253,7 +259,6 @@ class MoonTrainer(DefaultTrainer):
                 raise
             finally:
                 self.after_train()
-
 
     def remove_label(self, label_data):
         for label_datum in label_data:
@@ -265,23 +270,21 @@ class MoonTrainer(DefaultTrainer):
         for unlabel_datum, lab_inst in zip(unlabled_data, label):
             unlabel_datum["instances"] = lab_inst
         return unlabled_data
-    
 
- 
     # implement Contrastive Learning Loss with Moon
     # Zglobal, Z, Zprev are features from global, local, local_prev
     def compute_Lcon(self, Z, Zglob, Zprev, temperature, mu):
-        cos=torch.nn.CosineSimilarity(dim=-1)
+        cos = torch.nn.CosineSimilarity(dim=-1)
         criterion = nn.CrossEntropyLoss().cuda()
-        Z_features=list(Z.values())[0]
-        Zglob_features=list(Zglob.values())[0]
-        Zprev_features=list(Zprev.values())[0]
+        Z_features = list(Z.values())[0]
+        Zglob_features = list(Zglob.values())[0]
+        Zprev_features = list(Zprev.values())[0]
         posi = cos(Z_features, Zglob_features)
         nega = cos(Z_features, Zprev_features)
-        logits = torch.cat((posi.reshape(-1,1), nega.reshape(-1,1)), dim=1)
+        logits = torch.cat((posi.reshape(-1, 1), nega.reshape(-1, 1)), dim=1)
         logits /= temperature
-        
-        ##TODO: 剩下這兩行要解決：新的logits 算出來之後，要怎麼算loss 
+
+        ##TODO: 剩下這兩行要解決：新的logits 算出來之後，要怎麼算loss
         labels = torch.zeros(logits.size(0)).cuda().long()
         loss = mu * criterion(logits, labels)
         ##
@@ -290,7 +293,7 @@ class MoonTrainer(DefaultTrainer):
     # =====================================================
     # =================== Training Flow ===================
     # =====================================================
-    
+
     def run_step(self):
         self._trainer.iter = self.iter
         assert self.model.training, "[PTrainer] model was changed to eval mode!"
@@ -303,7 +306,7 @@ class MoonTrainer(DefaultTrainer):
 
         # source only stage (supervised training with labeled data)
 
-#-------------------------------
+        # -------------------------------
         # input both strong and weak supervised data into model
         label_data_q.extend(label_data_k)
         #   feature_global = Zglobal
@@ -316,43 +319,56 @@ class MoonTrainer(DefaultTrainer):
         # weight losses
         loss_dict = {}
         for key in record_dict.keys():
-            if key.split('_')[-1] == "adv":
+            if key.split("_")[-1] == "adv":
                 loss_dict[key] = record_dict[key] * 0.0
             elif key[:4] == "loss":
                 loss_dict[key] = record_dict[key] * 1.0
         loss_sup = sum(loss_dict.values())
-        
-        with torch.no_grad(): # 讓 參數不要更新
+
+        with torch.no_grad():  # 讓 參數不要更新
             # superorange = self.model_global(label_data_q, branch="unsup_get_features_only")
-            _, Zglob, _, _ = self.model_global(label_data_q, branch="unsup_get_features_only")
-            _, Zprev, _, _ = self.model_local_prev(label_data_q, branch="unsup_get_features_only")
-#--------------------------------------
-#
-#   !!! check if global & local_prev need to set "required_grad = False" !!!
-#          #-------------------------# 
-#          # compute moon loss here  #
-#          #-------------------------#
-#   feature_global = Zglobal
-#   feature_local  = Z
-#   feature_local_prev = Zprev
-#   loss_conv = xxxxxx
-# losses = loss_sup + loss_conv
-#----------------------------------------
+            _, Zglob, _, _ = self.model_global(
+                label_data_q, branch="unsup_get_features_only"
+            )
+            _, Zprev, _, _ = self.model_local_prev(
+                label_data_q, branch="unsup_get_features_only"
+            )
+        # --------------------------------------
+        #
+        #   !!! check if global & local_prev need to set "required_grad = False" !!!
+        #          #-------------------------#
+        #          # compute moon loss here  #
+        #          #-------------------------#
+        #   feature_global = Zglobal
+        #   feature_local  = Z
+        #   feature_local_prev = Zprev
+        #   loss_conv = xxxxxx
+        # losses = loss_sup + loss_conv
+        # ----------------------------------------
         # 計算 loss，若 cfg.CONTRASTIVE.Lcon_Enable，則啟用 moon loss
         # if self.cfg.MODEL.CONTRASTIVE_Lcon_Enable:
-        if self.cfg.MOON.CONTRASTIVE_Lcon_Enable and self.cfg.MOON.ROUND>0:
+        if self.cfg.MOON.CONTRASTIVE_Lcon_Enable and self.cfg.MOON.ROUND > 0:
             # losses 計算考慮 loss_sup + loss_conv
-            TEMPERATURE = self.cfg.MOON.CONTRASTIVE_T 
+            TEMPERATURE = self.cfg.MOON.CONTRASTIVE_T
             MU = self.cfg.MOON.CONTRASTIVE_MU
             # compute_Lcon implement moon psudo code 12~17
-            loss_conv = self.compute_Lcon( Z, Zglob, Zprev, TEMPERATURE, MU )
+            loss_conv = self.compute_Lcon(Z, Zglob, Zprev, TEMPERATURE, MU)
             losses = loss_sup + loss_conv
-            wandb_log_dict = { 'losses': losses, 'loss_sup': loss_sup, 'loss_conv': loss_conv, 'loss_dict': loss_dict}
+            wandb_log_dict = {
+                "losses": losses,
+                "loss_sup": loss_sup,
+                "loss_conv": loss_conv,
+                "loss_dict": loss_dict,
+            }
         else:
             # 否則只有 supervised loss
             losses = loss_sup
-            wandb_log_dict = { 'loss_dict': loss_dict, 'losses': losses, 'loss_sup': loss_sup }
-        
+            wandb_log_dict = {
+                "loss_dict": loss_dict,
+                "losses": losses,
+                "loss_sup": loss_sup,
+            }
+
         # 使用wandb log loss
         if self.cfg.MOON.WANDB_Enable:
             # wandb.watch(self.model_global, log="all")
@@ -360,13 +376,13 @@ class MoonTrainer(DefaultTrainer):
             wandb.log(wandb_log_dict)
             # wandb.log({ 'loss_dict': loss_dict })
             # wandb.log({ 'losses': losses, 'loss_sup': loss_sup })
-        
+
         metrics_dict = record_dict
         metrics_dict["data_time"] = data_time
         self._write_metrics(metrics_dict)
         self.optimizer.zero_grad()
         losses.backward()
-        self.clip_gradient(self.model, 10.)
+        self.clip_gradient(self.model, 10.0)
         self.optimizer.step()
 
         del record_dict
@@ -412,7 +428,6 @@ class MoonTrainer(DefaultTrainer):
             if len(metrics_dict) > 1:
                 self.storage.put_scalars(**metrics_dict)
 
-
     @classmethod
     def build_test_loader(cls, cfg, dataset_name):
         return build_detection_test_loader(cfg, dataset_name)
@@ -431,7 +446,8 @@ class MoonTrainer(DefaultTrainer):
         """
         if resume:
             checkpoint = self.checkpointer.load(
-                self.cfg.MODEL.WEIGHTS, checkpointables=['model', 'optimizer', 'scheduler']
+                self.cfg.MODEL.WEIGHTS,
+                checkpointables=["model", "optimizer", "scheduler"],
                 # self.cfg.MODEL.WEIGHTS, checkpointables=['model', 'optimizer', 'scheduler', 'iteration']
             )
         else:
@@ -459,16 +475,18 @@ class MoonTrainer(DefaultTrainer):
         ret = [
             hooks.IterationTimer(),
             hooks.LRScheduler(self.optimizer, self.scheduler),
-            hooks.PreciseBN(
-                # Run at the same freq as (but before) evaluation.
-                cfg.TEST.EVAL_PERIOD,
-                self.model,
-                # Build a new data loader to not affect training
-                self.build_train_loader(cfg),
-                cfg.TEST.PRECISE_BN.NUM_ITER,
-            )
-            if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.model)
-            else None,
+            (
+                hooks.PreciseBN(
+                    # Run at the same freq as (but before) evaluation.
+                    cfg.TEST.EVAL_PERIOD,
+                    self.model,
+                    # Build a new data loader to not affect training
+                    self.build_train_loader(cfg),
+                    cfg.TEST.PRECISE_BN.NUM_ITER,
+                )
+                if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.model)
+                else None
+            ),
         ]
 
         # Do PreciseBN before checkpointer, because it updates the model and need to
@@ -490,9 +508,7 @@ class MoonTrainer(DefaultTrainer):
             }
             return _last_eval_results_student
 
-        
         ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results_student))
-        
 
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
@@ -511,7 +527,7 @@ class MoonTrainer(DefaultTrainer):
         data = copy.deepcopy(data)
         bs = len(data)
         for i in range(bs):
-            img = data[i]['image']
+            img = data[i]["image"]
             h, w = img.shape[-2], img.shape[-1]
             ratio = random.uniform(0.5, 1.0)
             d_h, d_w = int(h * ratio), int(w * ratio)
@@ -522,24 +538,26 @@ class MoonTrainer(DefaultTrainer):
                 bg += self.model.pixel_mean.cpu().int()
             except:
                 bg += self.model.module.pixel_mean.cpu().int()
-            bg[:, y1:y1 + d_h, x1:x1 + d_w] = F.interpolate(img.unsqueeze(0).float(),
-                                                            size=(d_h, d_w),
-                                                            align_corners=False,
-                                                            mode='bilinear').squeeze(0)
-            data[i]['image'] = bg
-            if data[i]['instances'].has('gt_boxes'):
-                data[i]['instances'].gt_boxes.tensor *= ratio
-                data[i]['instances'].gt_boxes.tensor[:, 0] += x1
-                data[i]['instances'].gt_boxes.tensor[:, 2] += x1
-                data[i]['instances'].gt_boxes.tensor[:, 1] += y1
-                data[i]['instances'].gt_boxes.tensor[:, 3] += y1
+            bg[:, y1 : y1 + d_h, x1 : x1 + d_w] = F.interpolate(
+                img.unsqueeze(0).float(),
+                size=(d_h, d_w),
+                align_corners=False,
+                mode="bilinear",
+            ).squeeze(0)
+            data[i]["image"] = bg
+            if data[i]["instances"].has("gt_boxes"):
+                data[i]["instances"].gt_boxes.tensor *= ratio
+                data[i]["instances"].gt_boxes.tensor[:, 0] += x1
+                data[i]["instances"].gt_boxes.tensor[:, 2] += x1
+                data[i]["instances"].gt_boxes.tensor[:, 1] += y1
+                data[i]["instances"].gt_boxes.tensor[:, 3] += y1
 
-            if data[i]['instances'].has('pseudo_boxes'):
-                data[i]['instances'].pseudo_boxes.tensor *= ratio
-                data[i]['instances'].pseudo_boxes.tensor[:, 0] += x1
-                data[i]['instances'].pseudo_boxes.tensor[:, 2] += x1
-                data[i]['instances'].pseudo_boxes.tensor[:, 1] += y1
-                data[i]['instances'].pseudo_boxes.tensor[:, 3] += y1
+            if data[i]["instances"].has("pseudo_boxes"):
+                data[i]["instances"].pseudo_boxes.tensor *= ratio
+                data[i]["instances"].pseudo_boxes.tensor[:, 0] += x1
+                data[i]["instances"].pseudo_boxes.tensor[:, 2] += x1
+                data[i]["instances"].pseudo_boxes.tensor[:, 1] += y1
+                data[i]["instances"].pseudo_boxes.tensor[:, 3] += y1
         return data
 
     def clip_gradient(self, model, clip_norm):
@@ -548,9 +566,9 @@ class MoonTrainer(DefaultTrainer):
         for p in model.parameters():
             if p.requires_grad and p.grad is not None:
                 modulenorm = p.grad.norm()
-                totalnorm += modulenorm ** 2
+                totalnorm += modulenorm**2
         totalnorm = torch.sqrt(totalnorm).item()
-        norm = (clip_norm / max(totalnorm, clip_norm))
+        norm = clip_norm / max(totalnorm, clip_norm)
         for p in model.parameters():
             if p.requires_grad and p.grad is not None:
                 p.grad.mul_(norm)

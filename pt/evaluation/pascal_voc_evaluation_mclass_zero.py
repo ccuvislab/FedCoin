@@ -15,6 +15,7 @@ from detectron2.utils import comm
 from detectron2.utils.file_io import PathManager
 
 from detectron2.evaluation.evaluator import DatasetEvaluator
+import wandb
 
 
 class PascalVOCDetectionEvaluator(DatasetEvaluator):
@@ -28,7 +29,7 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
     official API.
     """
 
-    def __init__(self, dataset_name):
+    def __init__(self, dataset_name, cfg):
         """
         Args:
             dataset_name (str): name of the dataset, e.g., "voc_2007_test"
@@ -41,25 +42,30 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
             os.path.join(meta.dirname, "Annotations/")
         )
         self._anno_file_template = os.path.join(annotation_dir_local, "{}.xml")
-        self._image_set_path = os.path.join(meta.dirname, "ImageSets", "Main", meta.split + ".txt")
+        self._image_set_path = os.path.join(
+            meta.dirname, "ImageSets", "Main", meta.split + ".txt"
+        )
         self._class_names = meta.thing_classes
         assert meta.year in [2007, 2012], meta.year
         self._is_2007 = meta.year == 2007
         self._cpu_device = torch.device("cpu")
         self._logger = logging.getLogger(__name__)
+        self.cfg = cfg  # waue
 
     def reset(self):
-        self._predictions = defaultdict(list)  # class name -> list of prediction strings
+        self._predictions = defaultdict(
+            list
+        )  # class name -> list of prediction strings
 
     def process_train(self, inputs, outputs):
         for input, output in zip(inputs, outputs):
             image_id = input["image_id"]
             instances = output.to(self._cpu_device)
-                
-            #[0].to(torch.device("cpu")).pseudo_boxes.tensor.numpy()
+
+            # [0].to(torch.device("cpu")).pseudo_boxes.tensor.numpy()
             boxes = instances.pseudo_boxes.tensor.numpy()
             scores = instances.scores.tolist()
-            #print(scores)
+            # print(scores)
             classes = instances.pred_classes.tolist()
             for box, score, cls in zip(boxes, scores, classes):
                 xmin, ymin, xmax, ymax = box
@@ -69,13 +75,14 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                 self._predictions[cls].append(
                     f"{image_id} {score:.3f} {xmin:.1f} {ymin:.1f} {xmax:.1f} {ymax:.1f}"
                 )
+
     def process_eval(self, inputs, outputs):
         for input, output in zip(inputs, outputs):
             image_id = input["image_id"]
-            instances = output["instances"].to(self._cpu_device)            
+            instances = output["instances"].to(self._cpu_device)
             boxes = instances.pred_boxes.tensor.detach().numpy()
             scores = instances.scores.tolist()
-            #print(scores)
+            # print(scores)
             classes = instances.pred_classes.tolist()
             for box, score, cls in zip(boxes, scores, classes):
                 xmin, ymin, xmax, ymax = box
@@ -106,18 +113,22 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                 self._dataset_name, 2007 if self._is_2007 else 2012
             )
         )
+        ## waue ##
+        if self.cfg.MOON.WANDB_Enable:
+            if not wandb.run:
+                wandb.init(project=self.cfg.MOON.WANDB_Project_Name)
 
+        log_data = {}  # 用於存儲要記錄的數據 waue
         with tempfile.TemporaryDirectory(prefix="pascal_voc_eval_") as dirname:
-            #dirname="/home/superorange5/Research/ProbabilisticTeacher/tmp/skf2c_sim10k_origin"
+            # dirname="/home/superorange5/Research/ProbabilisticTeacher/tmp/skf2c_sim10k_origin"
             res_file_template = os.path.join(dirname, "{}.txt")
-            #print(res_file_template)
-
+            # print(res_file_template)
 
             aps = defaultdict(list)  # iou -> ap per class
             for cls_id, cls_name in enumerate(self._class_names):
-                #print(cls_name)
+                # print(cls_name)
                 lines = predictions.get(cls_id, [""])
-                #print(res_file_template.format(cls_name))
+                # print(res_file_template.format(cls_name))
 
                 with open(res_file_template.format(cls_name), "w") as f:
                     f.write("\n".join(lines))
@@ -132,12 +143,23 @@ class PascalVOCDetectionEvaluator(DatasetEvaluator):
                         use_07_metric=self._is_2007,
                     )
                     aps[thresh].append(ap * 100)
-                    #print(ap*100)
+                    # print(ap*100)
+                # print APs of each class
+                class_mAP = {iou: aps[iou][cls_id] for iou in range(50, 80, 5)}  # waue
+                print(f"AP for class {cls_name}: {class_mAP}")  # waue
+                log_data[f"AP50_{cls_name}"] = class_mAP[50]  # waue
 
         ret = OrderedDict()
         mAP = {iou: np.mean(x) for iou, x in aps.items()}
-      
-        ret["bbox"] = {"AP": np.mean(list(mAP.values())), "AP50": mAP[50], "AP75": mAP[75]}
+        log_data["mAP50"] = mAP[50]  # waue
+        log_data["mAP75"] = mAP[75]  # waue
+        wandb.log(log_data)  # waue
+
+        ret["bbox"] = {
+            "AP": np.mean(list(mAP.values())),
+            "AP50": mAP[50],
+            "AP70": mAP[75],
+        }
         return ret
 
 
@@ -163,14 +185,15 @@ def parse_rec(filename):
     for obj in tree.findall("object"):
         obj_struct = {}
         obj_struct["name"] = obj.find("name").text
-        #obj_struct["pose"] = obj.find("pose").text
-        #obj_struct["truncated"] = int(obj.find("truncated").text)
-        
-        diffc = obj.find('difficult')
+        # obj_struct["pose"] = obj.find("pose").text
+        # obj_struct["truncated"] = int(obj.find("truncated").text)
+
+        diffc = obj.find("difficult")
         # if no difficult, set difficult=0
-        obj_struct['difficult'] = int(obj.find('difficult').text) if diffc != None else 0
-        
-        
+        obj_struct["difficult"] = (
+            int(obj.find("difficult").text) if diffc != None else 0
+        )
+
         bbox = obj.find("bndbox")
         obj_struct["bbox"] = [
             int(bbox.find("xmin").text),
@@ -215,7 +238,9 @@ def voc_ap(rec, prec, use_07_metric=False):
     return ap
 
 
-def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False):
+def voc_eval(
+    detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_metric=False
+):
     """rec, prec, ap = voc_eval(detpath,
                                 annopath,
                                 imagesetfile,
@@ -241,7 +266,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
 
     # first load gt
     # read list of images
-    
+
     with PathManager.open(imagesetfile, "r") as f:
         lines = f.readlines()
     imagenames = [x.strip() for x in lines]
@@ -254,7 +279,7 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
     # extract gt objects for this class
     class_recs = {}
     npos = 0
-    for imagename in imagenames:        
+    for imagename in imagenames:
         R = [obj for obj in recs[imagename] if obj["name"] == classname]
         bbox = np.array([x["bbox"] for x in R])
         difficult = np.array([x["difficult"] for x in R]).astype(np.bool)
@@ -306,28 +331,28 @@ def voc_eval(detpath, annopath, imagesetfile, classname, ovthresh=0.5, use_07_me
                 - inters
             )
 
-            overlaps = inters / uni            
+            overlaps = inters / uni
             ovmax = np.max(overlaps)
             jmax = np.argmax(overlaps)
 
         if ovmax > ovthresh:
             if not R["difficult"][jmax]:
                 if not R["det"][jmax]:
-                    
-                    #print("TP idx={}".format(jmax))
+
+                    # print("TP idx={}".format(jmax))
                     tp[d] = 1.0
                     R["det"][jmax] = 1
                 else:
                     fp[d] = 1.0
-                    #print("FP idx={}".format(jmax))
+                    # print("FP idx={}".format(jmax))
         else:
             fp[d] = 1.0
 
     # compute precision recall
     fp = np.cumsum(fp)
     tp = np.cumsum(tp)
-    #print("fp={}, tp={}".format(fp[-1],tp[-1]))
-    
+    # print("fp={}, tp={}".format(fp[-1],tp[-1]))
+
     rec = tp / float(npos)
     # avoid divide by zero in case the first detection matches a difficult
     # ground truth

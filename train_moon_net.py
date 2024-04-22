@@ -20,15 +20,19 @@ from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.engine import DefaultTrainer
-from detectron2.evaluation import PascalVOCDetectionEvaluator
+
+# from detectron2.evaluation import PascalVOCDetectionEvaluator
+from pt.evaluation.pascal_voc_evaluation_mclass import (
+    PascalVOCDetectionEvaluator,
+)  # waue
 
 from pt import add_config
 from pt.engine.trainer import PTrainer
+
 # from pt.engine.trainer_moon import PTrainer_moon
 from pt.engine.trainer_moon import MoonTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.engine.trainer_pseudo import PseudoTrainer
-
 
 
 # to register
@@ -42,8 +46,10 @@ from pt.modeling.anchor_generator import DifferentiableAnchorGenerator
 from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
 from shutil import copyfile
 import os
-
+import wandb
 import logging
+
+
 class FRCNNTrainer(DefaultTrainer):
     """
     We use the "DefaultTrainer" which contains pre-defined default logic for
@@ -64,6 +70,7 @@ class FRCNNTrainer(DefaultTrainer):
         else:
             raise ValueError("Unknown test evaluator.")
 
+
 def setup(args):
     """
     Create configs and perform basic setups.
@@ -80,20 +87,21 @@ def setup(args):
 def main(args):
     cfg = setup(args)
 
-    copyfile(args.config_file, os.path.join(cfg.OUTPUT_DIR, 'cfg.yaml'))
-    copyfile('pt/modeling/roi_heads/fast_rcnn.py', os.path.join(cfg.OUTPUT_DIR, 'fast_rcnn.py'))
-    
-    
+    copyfile(args.config_file, os.path.join(cfg.OUTPUT_DIR, "cfg.yaml"))
+    copyfile(
+        "pt/modeling/roi_heads/fast_rcnn.py",
+        os.path.join(cfg.OUTPUT_DIR, "fast_rcnn.py"),
+    )
 
     if cfg.UNSUPNET.Trainer == "pt":
         Trainer = PTrainer
-#     elif cfg.UNSUPNET.Trainer == "pteval":
-#         Trainer = PTrainer
+    #     elif cfg.UNSUPNET.Trainer == "pteval":
+    #         Trainer = PTrainer
     elif cfg.UNSUPNET.Trainer == "moon":
         # Trainer= PTrainer_moon
         Trainer = MoonTrainer
     elif cfg.UNSUPNET.Trainer == "sourceonly":
-        Trainer= PTrainer_sourceonly
+        Trainer = PTrainer_sourceonly
     elif cfg.UNSUPNET.Trainer == "pseudo":
         Trainer = PseudoTrainer
     elif cfg.UNSUPNET.Trainer == "frcnn":
@@ -102,7 +110,7 @@ def main(args):
         raise ValueError("Trainer Name is not found.")
 
     if args.eval_only:
-        
+
         if cfg.UNSUPNET.Trainer in ["pt"]:
             model = Trainer.build_model(cfg)
             model_teacher = Trainer.build_model(cfg)
@@ -112,12 +120,12 @@ def main(args):
                 ensem_ts_model, save_dir=cfg.OUTPUT_DIR
             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
             res = Trainer.test(cfg, ensem_ts_model.modelStudent)
-#         elif cfg.UNSUPNET.Trainer in ["pteval"]:
-#             model = Trainer.build_model(cfg)            
-#             DetectionCheckpointer(
-#                 model, save_dir=cfg.OUTPUT_DIR
-#             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
-#             res = Trainer.test(cfg, model)
+        #         elif cfg.UNSUPNET.Trainer in ["pteval"]:
+        #             model = Trainer.build_model(cfg)
+        #             DetectionCheckpointer(
+        #                 model, save_dir=cfg.OUTPUT_DIR
+        #             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
+        #             res = Trainer.test(cfg, model)
         else:
             model = Trainer.build_model(cfg)
             DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
@@ -128,6 +136,10 @@ def main(args):
 
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=args.resume)
+
+    # close wandb for healthy # waue
+    if cfg.MOON.WANDB_Enable and wandb.run:
+        wandb.finish()
 
     return trainer.train()
 

@@ -23,11 +23,11 @@ SOLVER:
   CHECKPOINT_PERIOD: 800
   REFERENCE_BATCH_SIZE: 16
 MOON:
-  CONTRASTIVE_Lcon_Enable: False
+  CONTRASTIVE_Lcon_Enable: True
   CONTRASTIVE_MU: 0.5
   CONTRASTIVE_T: 0.5
   WANDB_Enable: True
-  WANDB_Project_Name: "FedMA_mclass_0331_ck2b"
+  WANDB_Project_Name: "FedMA_ck2b_cla8moon_20240331"
 DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
@@ -36,7 +36,7 @@ DATASETS:
   #TRAIN_UNLABEL: ("VOC2007_bddtrain1",)
   TEST: ("VOC2007_bddval8small",)
 UNSUPNET:
-  Trainer: "sourceonly"
+  Trainer: "moon"
   TEACHER_UPDATE_ITER: 1
   BURN_UP_STEP: 0
   EMA_KEEP_RATE: 0.9996
@@ -53,4 +53,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/FedMA_ck2b_cla8_20240331/"
+OUTPUT_DIR: "./output/FedMA_ck2b_cla8moon_20240331/"

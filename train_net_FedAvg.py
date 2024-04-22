@@ -37,11 +37,12 @@ from shutil import copyfile
 
 from FLpkg import FedUtils
 from FLpkg import add_config as FL_add_config
-
+import wandb
 import os
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
+
 
 def setup(args):
     """
@@ -57,186 +58,184 @@ def setup(args):
     return cfg
 
 
-
 def load_TSmodel(cfg_path, model_path):
     cfg = setup(cfg_path)
-    #cfg.defrost()
-    #cfg.MODEL.WEIGHTS = model_path
-    
-    Trainer =PTrainer
+    # cfg.defrost()
+    # cfg.MODEL.WEIGHTS = model_path
+
+    Trainer = PTrainer
     model = Trainer.build_model(cfg)
     model_teacher = Trainer.build_model(cfg)
-    ensem_ts_model = EnsembleTSModel(model_teacher, model)    
-    
+    ensem_ts_model = EnsembleTSModel(model_teacher, model)
+
     DetectionCheckpointer(ensem_ts_model).resume_or_load(model_path, resume=False)
-    
+
     return ensem_ts_model
 
 
-def get_model(dataset_name,model_num):
-    if model_num =='final':
-        model_name ='model_final.pth'
+def get_model(dataset_name, model_num):
+    if model_num == "final":
+        model_name = "model_final.pth"
     else:
-        model_name = 'model_{0:07d}.pth'.format(model_num)
-    model_path = os.path.join(model_folder,dataset_name,model_name)
-    cfg_path = os.path.join(model_folder,dataset_name,'cfg.yaml')
+        model_name = "model_{0:07d}.pth".format(model_num)
+    model_path = os.path.join(model_folder, dataset_name, model_name)
+    cfg_path = os.path.join(model_folder, dataset_name, "cfg.yaml")
     print(cfg_path)
     print(model_path)
     return load_TSmodel(cfg_path, model_path)
 
 
-def run_client_training(i,source_data,cfg, Trainer):   
+def run_client_training(i, source_data, cfg, Trainer):
     trainer = Trainer(cfg)
     trainer.resume_or_load(resume=False)
     trainer.train()
     return trainer.model
-    
-    
+
+
 def main(args):
-    
+
     cfg = setup(args)
-    
-    thread_mode=cfg.FEDSET.THREAD
-    #cfg.defrost()
+
+    thread_mode = cfg.FEDSET.THREAD
+    # cfg.defrost()
     output_folder = cfg.OUTPUT_DIR
     initial_model_path = cfg.MODEL.WEIGHTS
-    
-    
-    
-    
-    copyfile(args.config_file, os.path.join(output_folder, 'cfg.yaml'))
-    
-    
+
+    copyfile(args.config_file, os.path.join(output_folder, "cfg.yaml"))
+
     if cfg.UNSUPNET.Trainer == "pt":
         Trainer = PTrainer
     elif cfg.UNSUPNET.Trainer == "sourceonly":
-        Trainer= PTrainer_sourceonly    
+        Trainer = PTrainer_sourceonly
     elif cfg.UNSUPNET.Trainer == "moon":
-        Trainer= MoonTrainer
+        Trainer = MoonTrainer
     else:
         raise ValueError("Trainer Name is not found.")
-    
-    
-   
-    #---------load initial weight
-    source_dataset_list = cfg.FEDSET.DATASET_LIST #["VOC2007_citytrain1","VOC2007_kitti1"]
+
+    # ---------load initial weight
+    source_dataset_list = (
+        cfg.FEDSET.DATASET_LIST
+    )  # ["VOC2007_citytrain1","VOC2007_kitti1"]
     parties = len(source_dataset_list)
-    #target_dataset = ['VOC2007_bddval1']
-    
-    ROUND=cfg.FEDSET.ROUND
-    
+    # target_dataset = ['VOC2007_bddval1']
+
+    ROUND = cfg.FEDSET.ROUND
+
     for r in range(ROUND):
         print("=====start round {}=====".format(r))
-        
-        
+
         print("initial_model_path={}".format(initial_model_path))
-        
-        model_list=[None] * parties
-        
+
+        model_list = [None] * parties
+
         if thread_mode:
             # create input args
-            args_names=[]
-            for i,source_dataset in enumerate(source_dataset_list):
+            args_names = []
+            for i, source_dataset in enumerate(source_dataset_list):
                 cfg_client = setup(args)
                 cfg_client.defrost()
                 cfg_client.MODEL.WEIGHTS = initial_model_path
-                cfg_client.MODEL.DEVICE = 'cuda:'+str(i) 
-                cfg_client.OUTPUT_DIR = os.path.join(output_folder,source_dataset+"_"+str(r))
+                cfg_client.MODEL.DEVICE = "cuda:" + str(i)
+                cfg_client.OUTPUT_DIR = os.path.join(
+                    output_folder, source_dataset + "_" + str(r)
+                )
                 print("output subdir={}".format(cfg_client.OUTPUT_DIR))
-                cfg_client.DATASETS.TRAIN_LABEL=source_dataset
+                cfg_client.DATASETS.TRAIN_LABEL = source_dataset
                 print("current source={}".format(source_dataset))
                 cfg_client.freeze()
-                args_names.append((i,source_dataset,cfg_client, Trainer))
-                
+                args_names.append((i, source_dataset, cfg_client, Trainer))
 
             print(len(args_names))
             with ThreadPoolExecutor() as executor:
-                client_models = executor.map(lambda f: run_client_training(*f), args_names)
+                client_models = executor.map(
+                    lambda f: run_client_training(*f), args_names
+                )
 
-
-    #             # get student model
-    #             model_list[i] = trainer.model
+            #             # get student model
+            #             model_list[i] = trainer.model
             model_list = list(client_models)
         else:
-            
-            for i,source_dataset in enumerate(source_dataset_list):
+
+            for i, source_dataset in enumerate(source_dataset_list):
                 torch.cuda.empty_cache()
                 cfg = setup(args)
                 cfg.defrost()
-
-
                 cfg.MODEL.Global_PATH = initial_model_path
                 if cfg.MOON.CONTRASTIVE_Lcon_Enable:
 
                     cfg.MOON.ROUND = r
-                    #cfg.MODEL.GLOBAL_TRAINER = cfg.UNSUPNET.Trainer
-                    #cfg.MODEL.LOCAL_TRAINER = cfg.UNSUPNET.Trainer
-                    #cfg.MODEL.Global_PATH = initial_model_path
-                    if r>0:
-                        previous_output_folder = os.path.join(output_folder,source_dataset+"_"+str(r-1))
-                        cfg.MODEL.LOCAL_PREV_PATH = os.path.join(previous_output_folder, "model_final.pth")
+                    # cfg.MODEL.GLOBAL_TRAINER = cfg.UNSUPNET.Trainer
+                    # cfg.MODEL.LOCAL_TRAINER = cfg.UNSUPNET.Trainer
+                    # cfg.MODEL.Global_PATH = initial_model_path
+                    if r > 0:
+                        previous_output_folder = os.path.join(
+                            output_folder, source_dataset + "_" + str(r - 1)
+                        )
+                        cfg.MODEL.LOCAL_PREV_PATH = os.path.join(
+                            previous_output_folder, "model_final.pth"
+                        )
                     else:
-                        cfg.MODEL.LOCAL_PREV_PATH = initial_model_path #won't be used, but need to be set
-                        
-                else:
-                    cfg.MODEL.LOCAL_PREV_PATH = initial_model_path #won't be used, but need to be set
+                        cfg.MODEL.LOCAL_PREV_PATH = (
+                            initial_model_path  # won't be used, but need to be set
+                        )
 
-                cfg.MODEL.WEIGHTS = initial_model_path                
-                cfg.OUTPUT_DIR = os.path.join(output_folder,source_dataset+"_"+str(r))
+                else:
+                    cfg.MODEL.LOCAL_PREV_PATH = (
+                        initial_model_path  # won't be used, but need to be set
+                    )
+
+                cfg.MODEL.WEIGHTS = initial_model_path
+                cfg.OUTPUT_DIR = os.path.join(
+                    output_folder, source_dataset + "_" + str(r)
+                )
                 print("output subdir={}".format(cfg.OUTPUT_DIR))
-                cfg.DATASETS.TRAIN_LABEL=source_dataset
+                cfg.DATASETS.TRAIN_LABEL = source_dataset
                 print("current source={}".format(source_dataset))
-                
-                #---get backbone-dim
+
+                # ---get backbone-dim
                 if cfg.FEDSET.DYNAMIC:
                     fedma_model = torch.load(initial_model_path)
                     backbone_dim = FedUtils.get_backbone_shape(fedma_model)
                     cfg.BACKBONE_DIM = backbone_dim
-                
+
                 cfg.freeze()
 
+                if cfg.FEDSET.DYNAMIC_CLASS is not None:
 
-                if cfg.FEDSET.DYNAMIC_CLASS is not None:        
-
-                    print(cfg.FEDSET.DYNAMIC_CLASS[i])                
+                    print(cfg.FEDSET.DYNAMIC_CLASS[i])
                     cfg.defrost()
                     cfg.MODEL.ROI_HEADS.NUM_CLASSES = cfg.FEDSET.DYNAMIC_CLASS[i]
                     cfg.freeze()
-                
-                
+
                 trainer = Trainer(cfg)
                 trainer.resume_or_load(resume=False)
                 trainer.train()
-                model_list[i]=trainer.model
-                
-    
+                model_list[i] = trainer.model
+
         # all done and average them
-        
-        wk_ratio =  [1] * parties 
+
+        wk_ratio = [1] * parties
         wk_ratio = [x / parties for x in wk_ratio]
-        
-        
+
         # model to same device
-        device = torch.device('cuda:0') 
+        device = torch.device("cuda:0")
         for i in range(len(model_list)):
             model_list[i] = model_list[i].to(device)
-        
-        keyword="backbone" if cfg.FEDSET.BACKBONE_ONLY else None
-        
-            
-        avg_model = FedUtils.avgWeight(model_list, wk_ratio,keyword)
-        
-        
+
+        keyword = "backbone" if cfg.FEDSET.BACKBONE_ONLY else None
+
+        avg_model = FedUtils.avgWeight(model_list, wk_ratio, keyword)
+
         # save model_list
-        
-        initial_model_path = os.path.join(output_folder, "FedAvg_"+str(r)+".pth")
+
+        initial_model_path = os.path.join(output_folder, "FedAvg_" + str(r) + ".pth")
         torch.save(avg_model[0].state_dict(), initial_model_path)
-        
-        # put avg model to initial_weight        
+
+        # put avg model to initial_weight
         print("save avg model to {}".format(initial_model_path))
-
-
-
+    # close wandb for healthy # waue
+    if cfg.MOON.WANDB_Enable and wandb.run:
+        wandb.finish()
 
 
 if __name__ == "__main__":

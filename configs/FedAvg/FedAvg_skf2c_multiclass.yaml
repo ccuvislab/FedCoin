@@ -18,8 +18,8 @@ MOON:
   CONTRASTIVE_Lcon_Enable: False
   CONTRASTIVE_MU: 0.5
   CONTRASTIVE_T: 0.5
-  WANDB_Enable: False
-  WANDB_Project_Name: "FedAvg_moon_0103_skf2c"
+  WANDB_Enable: True
+  WANDB_Project_Name: "FedAvg_skf2c_multiclass_20240403"
 DATALOADER:
   NUM_WORKERS: 2
 FEDSET:
@@ -50,4 +50,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/FedAvg_skf2c_multiclass_test/"
+OUTPUT_DIR: "./output/FedAvg_skf2c_multiclass_20240403/"

@@ -166,11 +166,11 @@ def register_all_pascal_voc(root):
                 "pottedplant", "sheep", "sofa", "train", "tvmonitor"
             )
         elif cls == 8:
-            class_names = ('truck', 'car', 'rider', 'person', 'train', 'motorcycle', 'bicycle', 'bus')
+            class_names = ('car','truck',  'rider', 'person', 'train', 'motorcycle', 'bicycle', 'bus')
         elif cls == 7:
-            class_names = ('truck', 'car', 'rider', 'person', 'motorcycle', 'bicycle', 'bus')
+            class_names = ('car','truck',  'rider', 'person', 'motorcycle', 'bicycle', 'bus')
         elif cls == 5:
-            class_names = ('truck', 'car', 'rider', 'person', 'train')
+            class_names = ('car','truck',  'rider', 'person', 'train')
         else:
             raise RuntimeError
         register_pascal_voc(name, os.path.join(root, dirname), split, year, class_names)
