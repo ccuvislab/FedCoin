@@ -20,6 +20,7 @@ from detectron2.config import get_cfg
 from detectron2.engine import default_argument_parser, default_setup, launch
 from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import PascalVOCDetectionEvaluator
+from pt.evaluation import pascal_voc_evaluation_copy
 from detectron2.evaluation import COCOEvaluator
 from pt import add_config
 from FLpkg import add_config as FL_add_config
@@ -61,7 +62,7 @@ class FRCNNTrainer(DefaultTrainer):
         if cfg.TEST.EVALUATOR == "COCOeval":
             return COCOEvaluator(dataset_name, cfg, True, output_folder)
         if cfg.TEST.EVALUATOR == "VOCeval":
-            return PascalVOCDetectionEvaluator(dataset_name)
+            return pascal_voc_evaluation_copy(dataset_name)
         else:
             raise ValueError("Unknown test evaluator.")
 

@@ -5,13 +5,14 @@ MODEL:
     FREEZE_AT: 5
   ROI_HEADS:
     NUM_CLASSES: 8 
-  TEACHER_TRAINER: "sourceonly"
+  TEACHER_TRAINER: "default"
   STUDENT_TRAINER: "sourceonly"
-  TEACHER_PATH: ('output/FedMA_ck2b_source-only/FedMA_VOC2007_kitti1_12.pth','output/PFRCNN_c2b_8class/model_final.pth')
-  STUDENT_PATH: 'output/FedMA_ck2b_cla8/FedAvg_final.pth'
+  TEACHER_PATH: ('keep_experiments/FedAvg_skf2c_moon/VOC2007_sim1_2/model_final.pth','keep_experiments/FedAvg_skf2c_moon/VOC2007_kitti5_2/model_final.pth','keep_experiments/FedAvg_skf2c_moon/VOC2007_foggytrain_2/model_final.pth')
+  STUDENT_PATH: 'keep_experiments/FedAvg_skf2c_moon/FedAvg_2.pth'
 FEDSET:
   DYNAMIC: True
-  DYNAMIC_CLASS: (1,8)
+  DYNAMIC_CLASS: (1,5,8)
+  TARGET_CLASS: 8
 SOLVER:
   LR_SCHEDULER_NAME: "WarmupMultiStepLR"
   STEPS: (30000,)
@@ -26,10 +27,11 @@ DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
   CROSS_DATASET: True
-  TRAIN_UNLABEL: ("VOC2007_bddval8",)
-  TEST: ("VOC2007_bddval8small",)
+  TRAIN_LABEL: ("VOC2007_foggytrain1",)
+  TRAIN_UNLABEL: ("VOC2007_citytrain1",)
+  TEST: ("VOC2007_cityval1",)
 UNSUPNET:
-  SOURCE_IDX: 1
+  SOURCE_IDX: 2
   Trainer: "FLtrainer"
   TEACHER_UPDATE_ITER: 1
   EMA_KEEP_RATE: 0.9996
@@ -46,4 +48,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/multi-teacher_ck2b_test8class/"
+OUTPUT_DIR: "./output/multi-teacher_skf2c_test8class/"

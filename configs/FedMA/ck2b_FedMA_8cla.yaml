@@ -4,13 +4,15 @@ MODEL:
     NAME: "build_vgg_backbone_dynamic"
   TEACHER_TRAINER: "sourceonly"
   TEACHER_PATH: ('output/PFRCNN_k2b_1class/model_final.pth','output/PFRCNN_c2b_8class/model_final.pth')
+  ROI_HEADS:
+    NUM_CLASSES: 8 
 FEDSET:
   THREAD: False
   DYNAMIC: False
   DYNAMIC_CLASS: (1,8)
   ROUND: 0
   DATASET_LIST: ("VOC2007_kitti1","VOC2007_citytrain") 
-  ONLY_BACKBONE: True 
+  BACKBONE_ONLY: True 
 SOLVER:
   LR_SCHEDULER_NAME: "WarmupMultiStepLR"
   STEPS: (200,)

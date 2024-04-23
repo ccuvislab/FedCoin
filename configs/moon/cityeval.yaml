@@ -1,8 +1,8 @@
 _BASE_: "../Guassian-RCNN-VGG.yaml"
 MODEL:
   ROI_HEADS:
-    NUM_CLASSES: 1 
-  WEIGHTS: "./output/FedAvg_skf2c_sourceonly/VOC2007_sim1_0/model_final.pth"
+    NUM_CLASSES: 8 
+  WEIGHTS: "output/FedAvg_skf2c_multiclass_test/VOC2007_sim1_2/model_final.pth"
 DATALOADER:
   NUM_WORKERS: 2
 DATASETS:

@@ -63,7 +63,7 @@ def setup(config_file):
 
 
 def scaling(proposal_roih,ratio):
-    scale_pred = proposal_roih[0].get('pred_boxes')
+    scale_pred = proposal_roih.get('pred_boxes')
     scale_pred.scale(ratio,ratio)
     return scale_pred
 ##------------model
@@ -102,7 +102,8 @@ def load_TSmodel(cfg_path, model_path):
     
     return ensem_ts_model
 
-@get_model
+
+
 def load_sourceonlyModel(cfg_path,model_path):
     cfg = setup(cfg_path)   
     
@@ -111,7 +112,6 @@ def load_sourceonlyModel(cfg_path,model_path):
     DetectionCheckpointer(model).resume_or_load(model_path, resume=False)
     
     return model 
-
 
 
 def load_FRCNNmodel(cfg, model_path):
@@ -238,7 +238,7 @@ def get_FP(ma_src,source_list):
     return FP_array_all
 ##---------------visualize
 
-def drawbb(image_filename, target_metadata, bboxes_to_draw):
+def drawbb(image_filename, target_metadata, bboxes_to_draw, output_name):
     im = cv2.imread(image_filename, cv2.IMREAD_COLOR)[:, :, ::-1]
     v = Visualizer(
             im[:, :, ::-1], 
@@ -251,9 +251,42 @@ def drawbb(image_filename, target_metadata, bboxes_to_draw):
 
     v = v.get_output()
     img =  v.get_image()[:, :, ::-1]
-    cv2.imwrite('showbb.jpg', img)
+    cv2.imwrite(output_name, img)
 
-    
+
+def drawimage_bb_text(image_tensor, bboxes_to_draw, output_name):#,classes, scores,drawcolor='b'):
+    image_array = image_tensor.permute(1, 2, 0).cpu().numpy()
+
+    # Create a Visualizer instance
+    v = Visualizer(image_array)
+
+    for i, box in enumerate(bboxes_to_draw.to('cpu')):
+        #scores_numpy = scores[i].to('cpu').numpy()
+        #if scores_numpy>0.1:
+        v.draw_box(box,edge_color='b')
+            #v.draw_text(str(classes[i].to('cpu').numpy())+" " +str(scores_numpy), tuple(box[:2].numpy()) ,color=drawcolor)
+
+    v = v.get_output()
+    img =  v.get_image()[:, :, ::-1]
+    cv2.imwrite(output_name, img)    
+
+
+def drawbb_text(image_filename, target_metadata, bboxes_to_draw, output_name,classes, scores,drawcolor='b'):
+    im = cv2.imread(image_filename, cv2.IMREAD_COLOR)[:, :, ::-1]
+    v = Visualizer(
+            im[:, :, ::-1], 
+            metadata=target_metadata, 
+            scale=1,
+            )
+    for i, box in enumerate(bboxes_to_draw.to('cpu')):
+        scores_numpy = scores[i].to('cpu').numpy()
+        if scores_numpy>0.1:
+            v.draw_box(box,edge_color=drawcolor)
+            v.draw_text(str(classes[i].to('cpu').numpy())+" " +str(scores_numpy), tuple(box[:2].numpy()) ,color=drawcolor)
+
+    v = v.get_output()
+    img =  v.get_image()[:, :, ::-1]
+    cv2.imwrite(output_name, img)    
 
     
 

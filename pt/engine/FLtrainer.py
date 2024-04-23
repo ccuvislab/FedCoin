@@ -13,7 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pandas as pd
+import cv2
 
+
+from Nb_utils import drawbb, scaling, drawbb_text,drawimage_bb_text
 import os
 import time
 import logging
@@ -72,7 +75,7 @@ from pt.modeling.meta_arch.ts_ensemble import EnsembleTSModel
 from FLpkg import FedUtils
 
 
-# PTrainer
+# FLTrainer
 class FLtrainer(DefaultTrainer):
     def __init__(self, cfg):
         """
@@ -253,7 +256,50 @@ class FLtrainer(DefaultTrainer):
                 new_proposal_inst.boxes_sigma = proposal_bbox_inst.boxes_sigma
 
         return new_proposal_inst
+    def proposal_rebuilt(self, pesudo_proposals_roih_combined,image_shape):
+        list_instances = []
+        
+        for proposal_each_batch in pesudo_proposals_roih_combined:
+            #image_shape = proposal_each_batch.image_size
+            #list_instances_all_class = []
 
+            new_proposal_inst = FreeInstances(image_shape)    
+            pred_boxes_all = torch.empty((0, 4)).to("cuda")
+            scores_logists_all = torch.empty((0)).to("cuda")
+            boxes_sigma_all = torch.empty((0)).to("cuda")
+            pred_classes_all = torch.empty((0)).to("cuda")
+
+            for i, bbox_each_class in enumerate(proposal_each_batch):
+                if len(bbox_each_class)==0:
+                    continue
+                #for bbox in bbox_list:            
+
+
+                new_bbox_loc = bbox_each_class.pred_boxes.tensor
+                pred_boxes_all = torch.cat((pred_boxes_all, bbox_each_class.pred_boxes.tensor),0)
+                scores_logists_all =torch.cat((scores_logists_all, bbox_each_class.scores_logists),0)
+
+                if bbox_each_class.has('boxes_sigma'):
+                    boxes_sigma_all = torch.cat((boxes_sigma_all, bbox_each_class.boxes_sigma),0)
+                ## change to new class number 
+                pred_classes_all = torch.cat((pred_classes_all,torch.tensor([i]*len(new_bbox_loc), device=new_bbox_loc.device)),0)
+                
+        
+
+                #list_instances_all_class.append(new_proposal_inst)
+            # convert to bbox after scan all FreeInstances
+            # add boxes to instances
+            pseudo_boxes = Boxes(pred_boxes_all)     
+            new_proposal_inst.pseudo_boxes = pseudo_boxes  
+            new_proposal_inst.scores_logists = scores_logists_all
+            new_proposal_inst.boxes_sigma = boxes_sigma_all
+            new_proposal_inst.pred_classes = pred_classes_all
+
+
+            list_instances.append(new_proposal_inst)
+
+        return list_instances        
+        
     def process_pseudo_label2(self,proposals_roih):
         list_instances = []
         for proposal_bbox_inst in proposals_roih:
@@ -301,7 +347,88 @@ class FLtrainer(DefaultTrainer):
         for unlabel_datum, lab_inst in zip(unlabled_data, label):
             unlabel_datum["instances"] = lab_inst
         return unlabled_data
+
+
+
+    # output example: instances[filter_indexes[0]] = 
+    # Instances(num_instances=3, image_height=600, image_width=1067, fields=[pred_boxes: Boxes(tensor([[ 685.4396,   64.8855,  898.1867,  383.4017],
+    #     [ 735.0998,  160.8517, 1005.6562,  389.7646],
+    #     [ 786.9486,  251.6827, 1042.1509,  402.7314]], device='cuda:0')), scores: tensor([0.0630, 0.0552, 0.0419], device='cuda:0'), pred_classes: tensor([0, 0, 0], device='cuda:0'), scores_logists: tensor([[ 3.2885, -0.3624, -3.6121, -2.7339,  1.8865, -2.7645, -2.8715,  2.3732,
+    #       4.4550],
+    #     [ 2.2547,  0.2572, -2.9336, -1.9545,  1.4638, -2.1497, -2.2676,  1.6367,
+    #       3.4174],
+    #     [ 1.2456,  3.1901, -2.0167, -1.5520,  0.2320, -1.1804, -1.7390,  1.1358,
+    #       0.3912]], device='cuda:0'), boxes_sigma: tensor([[1.2566, 0.2428, 1.3352, 0.5630],
+    #     [1.2964, 0.3385, 1.3228, 0.6389],
+    #     [0.5930, 0.0256, 0.6070, 0.1564]], device='cuda:0')])
+
+    def filter_classes(slef, instances):
+        pred_classes = instances.pred_classes
+        unique_classes = torch.unique(pred_classes)
+
+        # Initialize a dictionary to store filter indexes for each class
+        filter_indexes = {}
+
+        # Loop through unique classes
+        for class_idx in unique_classes:
+            # Initialize a boolean tensor with False values
+            filter_index = torch.zeros_like(pred_classes, dtype=torch.bool)
+            # Set True for elements equal to the current class index
+            filter_index[pred_classes == class_idx] = True
+            # Store the filter index for the current class
+            filter_indexes[class_idx.item()] = filter_index   
+
+        return filter_indexes
+    #------old version, only keep bbox     
+    # def filter_classes(self, instances, num_class):
+    #     print(num_class)
+        
+    #     boxes = instances.pred_boxes.tensor #.detach().numpy()
+    #     scores =instances.scores.tolist()
+    #     classes = instances.pred_classes.tolist()
+    #     #print(len(classes))
+    #     bbox_by_cls = [[] for _ in range(num_class)]
+    #     #print(bbox_by_cls)
+    #     for box, score, cls in zip(boxes, scores, classes):
             
+    #         # Check if bbox_by_cls[class_index] is empty
+    #         if not bbox_by_cls[cls]:
+    #         # If empty, create a new Boxes object for the class
+    #             bbox_by_cls[cls] = Boxes(box.reshape(1, -1))
+    #         else:
+            
+    #         # If not empty, append to the existing Boxes object for the class
+                
+    #             bbox_by_cls[cls] = bbox_by_cls[cls].cat([bbox_by_cls[cls],Boxes(box.reshape(1, -1))])
+    #     return bbox_by_cls  
+    
+    def load_class_name(self, cls):
+        if cls == 1:
+            class_names = ('car',)
+        elif cls == 20:
+            class_names = (
+                "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
+                "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
+                "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+            )
+        elif cls == 8:
+            class_names = ('truck', 'car', 'rider', 'person', 'train', 'motorcycle', 'bicycle', 'bus')
+        elif cls == 7:
+            class_names = ('truck', 'car', 'rider', 'person', 'motorcycle', 'bicycle', 'bus')
+        elif cls == 5:
+            class_names = ('truck', 'car', 'rider', 'person', 'train')
+        else:
+            raise RuntimeError
+        return class_names
+
+    def generate_mapping(self,source_classes, target_classes):
+        mapping = []
+        for target_class in target_classes:
+            if target_class in source_classes:
+                mapping.append(source_classes.index(target_class))
+            else:
+                mapping.append(-1)
+        return mapping
 
     # =====================================================
     # =================== Training Flow ===================
@@ -337,15 +464,118 @@ class FLtrainer(DefaultTrainer):
                 ( _, proposals_rpn_unsup_k, proposals_roih_unsup_k, _,) = self.model_teacher_list[tea_i](unlabel_data_k, branch="unsup_data_weak")
                 roih_list.append(proposals_roih_unsup_k)
             batch_size = len(roih_list[0])
-            mt_src = self.get_match_array_nogt(roih_list)
+
+            target_metadata = MetadataCatalog.get(self.cfg.DATASETS.TEST)
+            colors = [
+                    (1, 0, 0),  # Blue
+                    (0, 1, 0),  # Green
+                    (0, 0, 1),  # Red
+                ]
             
-            pesudo_proposals_roih_combined = []
-            for batch_idx in range(batch_size):
-                keep_index = self.bb_ensemble(mt_src[batch_idx],self.source_index)
-                pesudo_proposals_roih_combined.append(roih_list[self.source_index][batch_idx][keep_index])
+            #------------draw bb, need to scale pred_boxes-----------------
+            # for bb_i in range(batch_size):
+            #     filename = data[0][bb_i]['file_name']
+            #     for i in range(num_teacher):               
                     
-            pesudo_proposals_roih_combined_final = self.process_pseudo_label2(pesudo_proposals_roih_combined)
-            
+            #         bboxes_to_draw = scaling(roih_list[i][bb_i],1.7066)
+            #         #bboxes_to_draw = scaling(roih_list[i][bb_i],1.2)
+                    
+            #         output_name = "output_images/{}_{}_{}".format(bb_i,i,os.path.basename(filename))
+            #         classes_name = roih_list[i][bb_i].get('pred_classes')
+            #         scores = roih_list[i][bb_i].get('scores')
+            #         drawbb_text(filename, target_metadata, bboxes_to_draw,output_name, classes_name, scores, colors[i % len(colors)])
+
+            # if number of class of source dataset are different 
+            if self.cfg.FEDSET.DYNAMIC_CLASS is not None:
+
+                # mapping ex: KITTI Mapping: [0, 1, 2, 3, 4, -1, -1, -1]
+                target_classes = self.load_class_name(self.cfg.FEDSET.TARGET_CLASS) # MODEL.ROI_HEADS would be changed by load model
+                
+                src_mapping_list=[]
+                for num_class in self.cfg.FEDSET.DYNAMIC_CLASS:
+                    source_classes = self.load_class_name(num_class)                    
+                    src_mapping_list.append(self.generate_mapping(source_classes, target_classes))
+                
+
+                
+                #proposals_roih_class = []
+                # separate proposals by class
+                pesudo_proposals_roih_combined = []
+                for batch_idx in range(batch_size):
+                    roih_separate_class_list=[]
+                    for src_idx, roih_sourcei in enumerate(roih_list):   
+                        image_size = roih_sourcei[batch_idx].image_size 
+                        filter_classes_index = self.filter_classes(roih_sourcei[batch_idx])
+                        roih_separate_class = []
+                        class_number = self.cfg.FEDSET.DYNAMIC_CLASS[src_idx]
+                        
+                        # Loop through each class
+                        for class_i in range(class_number):
+                            # Check if filter indexes has class_i
+                            if class_i in filter_classes_index:                
+                                # Use filter index to select elements from roih_sourcei
+                                roih_separate_class.append(roih_sourcei[batch_idx][filter_classes_index[class_i]])
+                            else:
+                                # Append an empty array if filter indexes does not have class_i
+                                roih_separate_class.append([])
+                        roih_separate_class_list.append(roih_separate_class)
+
+                    pesudo_proposals_roih_each_target = []
+                    # for each class
+                    for tgt_cls_idx in range(len(target_classes)):
+                        # mapping each source
+                        bbox_to_match = []
+                        whohasclass_src_id=[]
+                        for src_idx, src_mapping in enumerate(src_mapping_list):
+                            src_cls_idx = src_mapping[tgt_cls_idx] # ex: tgt_cls_idx=1, get car mapping id, sim10k car src_cls_idx=0  
+                            if src_cls_idx!=-1:     
+                                whohasclass_src_id.append(src_idx) # keep original source id                    
+                                bbox_to_match.append(roih_separate_class_list[src_idx][src_cls_idx])
+                        num_source_contains_class = len(bbox_to_match)
+
+                        # bb ensemble if more than 2 source contains class
+                        if num_source_contains_class >= 2:
+                            mt_src = self.get_match_array_nogt_batch(bbox_to_match)
+                            try:
+                                new_idx = whohasclass_src_id.index(self.source_index)
+                            except:
+                                new_idx = 0
+                            keep_index = self.bb_ensemble(mt_src,new_idx)  # source_index is fixed, need to reorganize
+                            if not keep_index.empty:
+                                pesudo_proposals_roih_each_target.append(bbox_to_match[new_idx][keep_index])
+                        #keep the original one as proposals    
+                        elif num_source_contains_class ==1: #keep the original one as proposals
+                            pesudo_proposals_roih_each_target.append(bbox_to_match[0])
+                            #print(bbox_to_match)
+                        #print(pesudo_proposals_roih_each_target)
+                        #self.bb_ensemble(mt_src[batch_idx],self.source_index)
+                    pesudo_proposals_roih_combined.append(pesudo_proposals_roih_each_target)
+                #print(pesudo_proposals_roih_combined,image_size)
+                #image_size = roih_list[0][0].image_size
+                pesudo_proposals_roih_combined_final = self.proposal_rebuilt(pesudo_proposals_roih_combined,image_size)
+
+                #------------draw bb no need to scale pseudo_boxes-----------------
+                # for bb_i in range(batch_size):
+                #     filename = data[0][bb_i]['file_name']
+                            
+                
+                #     bboxes_to_draw = pesudo_proposals_roih_combined_final[bb_i].get('pseudo_boxes')
+                    
+                #     output_name = "output_images/final_{}_{}".format(bb_i,os.path.basename(filename))
+                #     drawbb(filename, target_metadata, bboxes_to_draw,output_name)
+            # original: single class (car)
+            else:
+
+                mt_src = self.get_match_array_nogt(roih_list)
+                
+                
+                pesudo_proposals_roih_combined = []
+                for batch_idx in range(batch_size):
+                    keep_index = self.bb_ensemble(mt_src[batch_idx],self.source_index)
+                    pesudo_proposals_roih_combined.append(roih_list[self.source_index][batch_idx][keep_index])
+                        
+                pesudo_proposals_roih_combined_final = self.process_pseudo_label2(pesudo_proposals_roih_combined)
+                
 
         #  Pseudo-labeling
         joint_proposal_dict = {}
@@ -371,12 +601,29 @@ class FLtrainer(DefaultTrainer):
         
         all_unlabel_data = unlabel_data_q + unlabel_data_k
 
+        #------------draw bb no need to scale pseudo_boxes-----------------
+        # for bb_i in range(batch_size):
+        #     filename = data[0][bb_i]['file_name']
+                    
         
+        #     bboxes_to_draw = unlabel_data_q[bb_i].get('instances').get('pseudo_boxes')
+        #    # bboxes_to_draw.scale(1.2,1.2)
+            
+            
+        #     output_name = "output_images/unlabelq_{}_{}".format(bb_i,os.path.basename(filename))
+        #     #drawbb(filename, target_metadata, bboxes_to_draw,output_name)
+        #     drawimage_bb_text( unlabel_data_q[bb_i].get('image'), bboxes_to_draw,output_name)
+
+
         # target domain unsupervised loss
         # --------------------------
         record_all_unlabel_data, _, _, _ = self.model(
             unlabel_data_q, branch="unsupervised", danchor=True
         )
+
+
+
+
         new_record_all_unlabel_data = {}
         for key in record_all_unlabel_data.keys():
             new_record_all_unlabel_data[key + "_unsup"] = record_all_unlabel_data[
@@ -413,6 +660,8 @@ class FLtrainer(DefaultTrainer):
         del losses
         torch.cuda.empty_cache()
         gc.collect()
+
+
 
     def _write_metrics(self, metrics_dict: dict):
         metrics_dict = {
@@ -481,7 +730,36 @@ class FLtrainer(DefaultTrainer):
             self.model_teacher.load_state_dict(rename_model_dict)
         else:
             self.model_teacher.load_state_dict(self.model.state_dict())
-            
+
+       
+
+    def get_match_array_nogt_batch(self,proposals_roih):
+        source_num = len(proposals_roih)
+        #batch_size = len(proposals_roih[0])
+
+        #batch_match_array= []
+        #for data_idx in range(batch_size):
+        match_array_source = []
+        for i, source_prediction_n in enumerate(proposals_roih):
+            match_array_source_n =[]
+            # others
+            #pairwise_sa_sb = []        
+            for j in range(source_num):
+                if j!=i :                    
+                    if len(source_prediction_n)!=0 and len(proposals_roih[j])!=0:
+                        sourcen_n_match_other = structures.pairwise_iou(source_prediction_n.get('pred_boxes'),proposals_roih[j].get('pred_boxes'))
+                        #pairwise_sa_sb.append(sourcen_n_match_other)
+                        match_array_source_n.append(self.get_match_array(sourcen_n_match_other))
+                    else: 
+                        match_array_source_n.append([])    
+                    
+            match_array_source.append(match_array_source_n)
+            #batch_match_array.append(match_array_source)
+
+        return  match_array_source
+
+
+
     def get_match_array_nogt(self,proposals_roih):
         source_num = len(proposals_roih)
         batch_size = len(proposals_roih[0])
@@ -512,10 +790,12 @@ class FLtrainer(DefaultTrainer):
             else:
                 match_array[i] = True
         return match_array
+    
+    # keep if everybody detect it, or get rid of it
     def bb_ensemble(self,mt_src,src_idx):
         source_num = len(mt_src[0])
         df_src = pd.DataFrame()    
-        src_array = np.array(mt_src[src_idx]).T
+        src_array = np.array(mt_src[src_idx], dtype=object).T
         df_src = pd.DataFrame(src_array)
         df_src['summary'] = df_src.sum(axis=1)
         keep_index = df_src.index[df_src.summary==source_num]
@@ -575,17 +855,26 @@ class FLtrainer(DefaultTrainer):
         student_trainer = cfg.MODEL.STUDENT_TRAINER
         
 
+        # student ROI head = model.ROI_HEADS (target class number)
+        print("load student model:{} ".format(student_model_path))
+        print(cfg.MODEL.ROI_HEADS.NUM_CLASSES)
+        self.student_model = self.get_trainer(student_trainer, cfg, student_model_path)
+
+        self.model_teacher_list=[]
+
+        for client_id,model_teacher_path in enumerate(model_path_list):
+                print("load teacher model:{} ".format(model_teacher_path))
+                if cfg.FEDSET.DYNAMIC_CLASS is not None:
+                    cfg.defrost()
+                    cfg.MODEL.ROI_HEADS.NUM_CLASSES =cfg.FEDSET.DYNAMIC_CLASS[client_id]
+                    print(cfg.MODEL.ROI_HEADS.NUM_CLASSES)
+                    cfg.freeze()
+
+                model_with_weight = self.get_trainer(teacher_trainer, cfg, model_teacher_path)
+                self.model_teacher_list.append(model_with_weight)    
+
 
         
-        self.model_teacher_list=[]
-        for model_teacher_path in model_path_list:
-            print("load teacher model:{} ".format(model_teacher_path))
-            
-            model_with_weight = self.get_trainer(teacher_trainer, cfg, model_teacher_path)
-            self.model_teacher_list.append(model_with_weight)
-
-        print("load student model:{} ".format(student_model_path))
-        self.student_model = self.get_trainer(student_trainer, cfg, student_model_path)
         
         
         print(type(self.model_teacher_list[0]))

@@ -11,6 +11,7 @@ MODEL:
   STUDENT_PATH: 'output/FedMA_ck2b_source-only/FedAvg_final.pth'
 FEDSET:
   DYNAMIC: True
+  TARGET_CLASS: 8
 SOLVER:
   LR_SCHEDULER_NAME: "WarmupMultiStepLR"
   STEPS: (30000,)
