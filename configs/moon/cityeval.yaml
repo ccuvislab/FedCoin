@@ -8,7 +8,23 @@ DATALOADER:
 DATASETS:
   TEST: ("VOC2007_cityval1",)
 UNSUPNET:
-  Trainer: "sourceonly"
+  # Trainer: "sourceonly"
+  Trainer: "moon"
+  TEACHER_UPDATE_ITER: 1
+  BURN_UP_STEP: 0
+  EMA_KEEP_RATE: 0.9996
+  SOURCE_LOSS_WEIGHT: 1.0
+  TARGET_UNSUP_LOSS_WEIGHT: 1.0
+  GUASSIAN: True
+  EFL: True
+  EFL_LAMBDA: [0.5,0.5]
+  TAU: [0.25,0.25]
+MOON:
+  CONTRASTIVE_Lcon_Enable: True
+  CONTRASTIVE_MU: 0.5
+  CONTRASTIVE_T: 0.5
+  WANDB_Enable: True
+  WANDB_Project_Name: "FedMA_mclass_0331_ck2b"
 TEST:
   EVAL_PERIOD: 400
   EVALUATOR: "VOCeval"

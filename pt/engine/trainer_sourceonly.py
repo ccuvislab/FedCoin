@@ -28,14 +28,19 @@ from detectron2.engine import DefaultTrainer, SimpleTrainer, TrainerBase
 from detectron2.engine.train_loop import AMPTrainer
 from detectron2.utils.events import EventStorage
 from detectron2.evaluation import COCOEvaluator, verify_results
-from detectron2.evaluation import PascalVOCDetectionEvaluator
+
+# from detectron2.evaluation import PascalVOCDetectionEvaluator
+
+from pt.evaluation.pascal_voc_evaluation_mclass import (
+    PascalVOCDetectionEvaluator,
+)  # waue
 from detectron2.data.dataset_mapper import DatasetMapper
 from detectron2.engine import hooks
 from detectron2.structures.boxes import Boxes
 
 from pt.data.build import (
-    build_detection_test_loader,    
-    build_detection_sourceonly_loader_two_crops
+    build_detection_test_loader,
+    build_detection_sourceonly_loader_two_crops,
 )
 from pt.data.dataset_mapper import DatasetMapperTwoCropSeparate
 from pt.engine.hooks import LossEvalHook
@@ -47,7 +52,11 @@ from detectron2.utils.env import TORCH_VERSION
 from detectron2.modeling.anchor_generator import DefaultAnchorGenerator
 from detectron2.utils.visualizer import Visualizer
 from detectron2.data import detection_utils as utils
-from detectron2.data import DatasetCatalog, MetadataCatalog, build_detection_train_loader
+from detectron2.data import (
+    DatasetCatalog,
+    MetadataCatalog,
+    build_detection_train_loader,
+)
 
 from detectron2.data import detection_utils
 from PIL import Image
@@ -65,7 +74,6 @@ import gc
 from detectron2.utils.registry import Registry
 
 
-
 # PTrainer
 class PTrainer_sourceonly(DefaultTrainer):
     def __init__(self, cfg):
@@ -81,11 +89,11 @@ class PTrainer_sourceonly(DefaultTrainer):
         # create an student model
         try:
             if cfg.FEDSET.DYNAMIC:
-                model = self.build_model(cfg,cfg.BACKBONE_DIM,False)
+                model = self.build_model(cfg, cfg.BACKBONE_DIM, False)
             else:
                 model = self.build_model(cfg)
-        except: 
-            model = self.build_model(cfg)   
+        except:
+            model = self.build_model(cfg)
 
         optimizer = self.build_optimizer(cfg, model)
         # from IPython import embed
@@ -118,14 +126,13 @@ class PTrainer_sourceonly(DefaultTrainer):
         # merlin to save memeory
         def inplace_relu(m):
             classname = m.__class__.__name__
-            if classname.find('ReLU') != -1:
+            if classname.find("ReLU") != -1:
                 m.inplace = True
 
         self.model.apply(inplace_relu)
-    
-        
+
     @classmethod
-    def build_model(cls, cfg, myarg=None,load_pretrained=True):
+    def build_model(cls, cfg, myarg=None, load_pretrained=True):
         """
         Returns:
             torch.nn.Module:
@@ -133,12 +140,11 @@ class PTrainer_sourceonly(DefaultTrainer):
         It now calls :func:`detectron2.modeling.build_model`.
         Overwrite it if you'd like a different model.
         """
-        
-        model = build_my_model(cfg,myarg,load_pretrained)
+
+        model = build_my_model(cfg, myarg, load_pretrained)
         logger = logging.getLogger(__name__)
         logger.info("Model:\n{}".format(model))
         return model
-
 
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
@@ -148,7 +154,8 @@ class PTrainer_sourceonly(DefaultTrainer):
         if cfg.TEST.EVALUATOR == "COCOeval":
             return COCOEvaluator(dataset_name, cfg, True, output_folder)
         if cfg.TEST.EVALUATOR == "VOCeval":
-            return PascalVOCDetectionEvaluator(dataset_name)
+            # return PascalVOCDetectionEvaluator(dataset_name)  # waue
+            return PascalVOCDetectionEvaluator(dataset_name, cfg)  # waue
         else:
             raise ValueError("Unknown test evaluator.")
 
@@ -179,7 +186,7 @@ class PTrainer_sourceonly(DefaultTrainer):
                 self.before_train()
 
                 for self.iter in range(start_iter, max_iter):
-                    #print("iter:{} device:{}".format(self.iter, self.cfg.MODEL.DEVICE))
+                    # print("iter:{} device:{}".format(self.iter, self.cfg.MODEL.DEVICE))
                     self.before_step()
                     with torch.autograd.set_detect_anomaly(True):
                         self.run_step()
@@ -189,7 +196,6 @@ class PTrainer_sourceonly(DefaultTrainer):
                 raise
             finally:
                 self.after_train()
-
 
     def remove_label(self, label_data):
         for label_datum in label_data:
@@ -218,29 +224,29 @@ class PTrainer_sourceonly(DefaultTrainer):
 
         # source only stage (supervised training with labeled data)
 
-#-------------------------------
+        # -------------------------------
         # input both strong and weak supervised data into model
         label_data_q.extend(label_data_k)
 
         label_data_q = self.resize(label_data_q)
         record_dict, _, _, _ = self.model(label_data_q, branch="supervised")
-    
-        # weight losses 
+
+        # weight losses
         loss_dict = {}
         for key in record_dict.keys():
-            if key.split('_')[-1] == "adv":
+            if key.split("_")[-1] == "adv":
                 loss_dict[key] = record_dict[key] * 0.0
             elif key[:4] == "loss":
                 loss_dict[key] = record_dict[key] * 1.0
         losses = sum(loss_dict.values())
-#-------------------------------------- 從這邊開始修改
-      
+        # -------------------------------------- 從這邊開始修改
+
         metrics_dict = record_dict
         metrics_dict["data_time"] = data_time
         self._write_metrics(metrics_dict)
         self.optimizer.zero_grad()
         losses.backward()
-        self.clip_gradient(self.model, 10.)
+        self.clip_gradient(self.model, 10.0)
         self.optimizer.step()
 
         del record_dict
@@ -286,7 +292,6 @@ class PTrainer_sourceonly(DefaultTrainer):
             if len(metrics_dict) > 1:
                 self.storage.put_scalars(**metrics_dict)
 
-
     @classmethod
     def build_test_loader(cls, cfg, dataset_name):
         return build_detection_test_loader(cfg, dataset_name)
@@ -305,7 +310,8 @@ class PTrainer_sourceonly(DefaultTrainer):
         """
         if resume:
             checkpoint = self.checkpointer.load(
-                self.cfg.MODEL.WEIGHTS, checkpointables=['model', 'optimizer', 'scheduler']
+                self.cfg.MODEL.WEIGHTS,
+                checkpointables=["model", "optimizer", "scheduler"],
                 # self.cfg.MODEL.WEIGHTS, checkpointables=['model', 'optimizer', 'scheduler', 'iteration']
             )
         else:
@@ -333,16 +339,18 @@ class PTrainer_sourceonly(DefaultTrainer):
         ret = [
             hooks.IterationTimer(),
             hooks.LRScheduler(self.optimizer, self.scheduler),
-            hooks.PreciseBN(
-                # Run at the same freq as (but before) evaluation.
-                cfg.TEST.EVAL_PERIOD,
-                self.model,
-                # Build a new data loader to not affect training
-                self.build_train_loader(cfg),
-                cfg.TEST.PRECISE_BN.NUM_ITER,
-            )
-            if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.model)
-            else None,
+            (
+                hooks.PreciseBN(
+                    # Run at the same freq as (but before) evaluation.
+                    cfg.TEST.EVAL_PERIOD,
+                    self.model,
+                    # Build a new data loader to not affect training
+                    self.build_train_loader(cfg),
+                    cfg.TEST.PRECISE_BN.NUM_ITER,
+                )
+                if cfg.TEST.PRECISE_BN.ENABLED and get_bn_modules(self.model)
+                else None
+            ),
         ]
 
         # Do PreciseBN before checkpointer, because it updates the model and need to
@@ -364,9 +372,7 @@ class PTrainer_sourceonly(DefaultTrainer):
             }
             return _last_eval_results_student
 
-        
         ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results_student))
-        
 
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
@@ -385,7 +391,7 @@ class PTrainer_sourceonly(DefaultTrainer):
         data = copy.deepcopy(data)
         bs = len(data)
         for i in range(bs):
-            img = data[i]['image']
+            img = data[i]["image"]
             h, w = img.shape[-2], img.shape[-1]
             ratio = random.uniform(0.5, 1.0)
             d_h, d_w = int(h * ratio), int(w * ratio)
@@ -396,24 +402,26 @@ class PTrainer_sourceonly(DefaultTrainer):
                 bg += self.model.pixel_mean.cpu().int()
             except:
                 bg += self.model.module.pixel_mean.cpu().int()
-            bg[:, y1:y1 + d_h, x1:x1 + d_w] = F.interpolate(img.unsqueeze(0).float(),
-                                                            size=(d_h, d_w),
-                                                            align_corners=False,
-                                                            mode='bilinear').squeeze(0)
-            data[i]['image'] = bg
-            if data[i]['instances'].has('gt_boxes'):
-                data[i]['instances'].gt_boxes.tensor *= ratio
-                data[i]['instances'].gt_boxes.tensor[:, 0] += x1
-                data[i]['instances'].gt_boxes.tensor[:, 2] += x1
-                data[i]['instances'].gt_boxes.tensor[:, 1] += y1
-                data[i]['instances'].gt_boxes.tensor[:, 3] += y1
+            bg[:, y1 : y1 + d_h, x1 : x1 + d_w] = F.interpolate(
+                img.unsqueeze(0).float(),
+                size=(d_h, d_w),
+                align_corners=False,
+                mode="bilinear",
+            ).squeeze(0)
+            data[i]["image"] = bg
+            if data[i]["instances"].has("gt_boxes"):
+                data[i]["instances"].gt_boxes.tensor *= ratio
+                data[i]["instances"].gt_boxes.tensor[:, 0] += x1
+                data[i]["instances"].gt_boxes.tensor[:, 2] += x1
+                data[i]["instances"].gt_boxes.tensor[:, 1] += y1
+                data[i]["instances"].gt_boxes.tensor[:, 3] += y1
 
-            if data[i]['instances'].has('pseudo_boxes'):
-                data[i]['instances'].pseudo_boxes.tensor *= ratio
-                data[i]['instances'].pseudo_boxes.tensor[:, 0] += x1
-                data[i]['instances'].pseudo_boxes.tensor[:, 2] += x1
-                data[i]['instances'].pseudo_boxes.tensor[:, 1] += y1
-                data[i]['instances'].pseudo_boxes.tensor[:, 3] += y1
+            if data[i]["instances"].has("pseudo_boxes"):
+                data[i]["instances"].pseudo_boxes.tensor *= ratio
+                data[i]["instances"].pseudo_boxes.tensor[:, 0] += x1
+                data[i]["instances"].pseudo_boxes.tensor[:, 2] += x1
+                data[i]["instances"].pseudo_boxes.tensor[:, 1] += y1
+                data[i]["instances"].pseudo_boxes.tensor[:, 3] += y1
         return data
 
     def clip_gradient(self, model, clip_norm):
@@ -422,9 +430,9 @@ class PTrainer_sourceonly(DefaultTrainer):
         for p in model.parameters():
             if p.requires_grad and p.grad is not None:
                 modulenorm = p.grad.norm()
-                totalnorm += modulenorm ** 2
+                totalnorm += modulenorm**2
         totalnorm = torch.sqrt(totalnorm).item()
-        norm = (clip_norm / max(totalnorm, clip_norm))
+        norm = clip_norm / max(totalnorm, clip_norm)
         for p in model.parameters():
             if p.requires_grad and p.grad is not None:
                 p.grad.mul_(norm)
