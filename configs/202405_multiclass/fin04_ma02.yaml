@@ -4,11 +4,13 @@ MODEL:
     NAME: "build_vgg_backbone_dynamic"
     FREEZE_AT: 5
   ROI_HEADS:
-    NUM_CLASSES: 8 
-  TEACHER_TRAINER: "default"
+    NUM_CLASSES: 8
+  TEACHER_TRAINER: "sourceonly"
   STUDENT_TRAINER: "sourceonly"
-  TEACHER_PATH: ('keep_experiments/FedAvg_skf2c_moon/VOC2007_sim1_2/model_final.pth','keep_experiments/FedAvg_skf2c_moon/VOC2007_kitti5_2/model_final.pth','keep_experiments/FedAvg_skf2c_moon/VOC2007_foggytrain_2/model_final.pth')
-  STUDENT_PATH: 'keep_experiments/FedAvg_skf2c_moon/FedAvg_2.pth'
+  TEACHER_PATH: ('output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_sim1_12.pth',
+                 'output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_kitti5_12.pth',
+                 'output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_foggytrain_12.pth')
+  STUDENT_PATH:  'output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_foggytrain_12.pth'
 FEDSET:
   DYNAMIC: True
   DYNAMIC_CLASS: (1,5,8)
@@ -26,6 +28,7 @@ SOLVER:
 DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
+  TRAIN_UNLABEL: ("VOC2007_citytrain",)
   CROSS_DATASET: True
   TEST: ("VOC2007_cityval",)
 UNSUPNET:
@@ -46,4 +49,6 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/multi-teacher_skf2c_test8class/"
+OUTPUT_DIR: "./output/fin04_skf2c_ma02/"
+
+
