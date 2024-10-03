@@ -1,8 +1,8 @@
-# A Privacy-preserving Approach for Multi-source Domain Adaptive Object Detection
+# (FedCoin) Federated Contrastive Domain Adaptation for Category-inconsistent Object Detection
 
 ![architecture](pic/architecture.png)
 
-This repo is the official implementation of VCIP paper "[Fedcoin...](https://ieeexplore.ieee.org/document/xxxx/)" by WeiYu Chen, Peggy Lu, Vincent S. Tseng.
+This repo is the official implementation of VCIP paper "[Federated Contrastive Domain Adaptation for Category-inconsistent Object Detection](https://ieeexplore.ieee.org/document/xxxx/)" by WeiYu Chen, Peggy Lu, Vincent S. Tseng.
 
 ## Installation
 
