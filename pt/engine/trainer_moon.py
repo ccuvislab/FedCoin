@@ -273,14 +273,22 @@ class MoonTrainer(DefaultTrainer):
 
     # implement Contrastive Learning Loss with Moon
     # Zglobal, Z, Zprev are features from global, local, local_prev
-    def compute_Lcon(self, Z, Zglob, Zprev, temperature, mu):
+    def compute_Lcon(self, Z, Zglob, Zprev, temperature, mu, adaptive):
         cos = torch.nn.CosineSimilarity(dim=-1)
         criterion = nn.CrossEntropyLoss().cuda()
         Z_features = list(Z.values())[0]
         Zglob_features = list(Zglob.values())[0]
         Zprev_features = list(Zprev.values())[0]
-        posi = cos(Z_features, Zglob_features)
-        nega = cos(Z_features, Zprev_features)
+        ## TODO : adaptive tunning # waue 20240526
+        if adaptive is True:
+            ## adaptive tunning
+            nega = cos(Z_features, Zglob_features)  # NewTry for MT
+            posi = cos(Z_features, Zprev_features)  # NewTry for MT
+        else:
+            ## original moon
+            posi = cos(Z_features, Zglob_features) # ori from moon
+            nega = cos(Z_features, Zprev_features) # ori from moon
+
         logits = torch.cat((posi.reshape(-1, 1), nega.reshape(-1, 1)), dim=1)
         logits /= temperature
 
@@ -347,12 +355,22 @@ class MoonTrainer(DefaultTrainer):
         # ----------------------------------------
         # 計算 loss，若 cfg.CONTRASTIVE.Lcon_Enable，則啟用 moon loss
         # if self.cfg.MODEL.CONTRASTIVE_Lcon_Enable:
+        
         if self.cfg.MOON.CONTRASTIVE_Lcon_Enable and self.cfg.MOON.ROUND > 0:
+            # self.cfg.MOON.ROUND 沒有設定，卻能正確指出 round 數
             # losses 計算考慮 loss_sup + loss_conv
             TEMPERATURE = self.cfg.MOON.CONTRASTIVE_T
             MU = self.cfg.MOON.CONTRASTIVE_MU
+
+            # inverse tuning, adaptive = True # waue 20240526
+            adaptive = True
+
+            ## adaptive tuning, only first run = True # waue 20240526
+            #adaptive = False
+            #if self.cfg.MOON.ROUND == 1:
+            #    adaptive = True
             # compute_Lcon implement moon psudo code 12~17
-            loss_conv = self.compute_Lcon(Z, Zglob, Zprev, TEMPERATURE, MU)
+            loss_conv = self.compute_Lcon(Z, Zglob, Zprev, TEMPERATURE, MU, adaptive)
             losses = loss_sup + loss_conv
             wandb_log_dict = {
                 "losses": losses,
@@ -369,13 +387,9 @@ class MoonTrainer(DefaultTrainer):
                 "loss_sup": loss_sup,
             }
 
-        # 使用wandb log loss
-        if self.cfg.MOON.WANDB_Enable:
-            # wandb.watch(self.model_global, log="all")
-            # wandb.watch(self.model_local_prev, log="all")
-            wandb.log(wandb_log_dict)
-            # wandb.log({ 'loss_dict': loss_dict })
-            # wandb.log({ 'losses': losses, 'loss_sup': loss_sup })
+        # 使用wandb log loss # 太瑣碎 先不用
+        # if self.cfg.MOON.WANDB_Enable:
+        #   wandb.log(wandb_log_dict)
 
         metrics_dict = record_dict
         metrics_dict["data_time"] = data_time

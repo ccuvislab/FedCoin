@@ -46,6 +46,7 @@ from pt.data.build import (
 )
 from pt.data.dataset_mapper import DatasetMapperTwoCropSeparate
 from pt.engine.hooks import LossEvalHook
+
 from pt.evaluation.pascal_voc_evaluation_mclass import (
     PascalVOCDetectionEvaluator,
 )  # waue
@@ -160,6 +161,20 @@ class FLtrainer(DefaultTrainer):
 
         self.model.apply(inplace_relu)
 
+    # ori
+    # @classmethod
+    # def build_evaluator(cls, cfg, dataset_name, output_folder=None):
+    #     if output_folder is None:
+    #         output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
+
+    #     if cfg.TEST.EVALUATOR == "COCOeval":
+    #         return COCOEvaluator(dataset_name, cfg, True, output_folder)
+    #     if cfg.TEST.EVALUATOR == "VOCeval":
+    #         return PascalVOCDetectionEvaluator(dataset_name)
+    #     else:
+    #         raise ValueError("Unknown test evaluator.")
+
+    # waue
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         if output_folder is None:
@@ -283,17 +298,17 @@ class FLtrainer(DefaultTrainer):
                     continue
                 # for bbox in bbox_list:
 
-                new_bbox_loc = bbox_each_class.pred_boxes.tensor[bbox_each_class.scores > 0.1]
+                new_bbox_loc = bbox_each_class.pred_boxes.tensor
                 pred_boxes_all = torch.cat(
-                    (pred_boxes_all, bbox_each_class.pred_boxes.tensor[bbox_each_class.scores > 0.1]), 0
+                    (pred_boxes_all, bbox_each_class.pred_boxes.tensor), 0
                 )
                 scores_logists_all = torch.cat(
-                    (scores_logists_all, bbox_each_class.scores_logists[bbox_each_class.scores > 0.1]), 0
+                    (scores_logists_all, bbox_each_class.scores_logists), 0
                 )
 
                 if bbox_each_class.has("boxes_sigma"):
                     boxes_sigma_all = torch.cat(
-                        (boxes_sigma_all, bbox_each_class.boxes_sigma[bbox_each_class.scores > 0.1]), 0
+                        (boxes_sigma_all, bbox_each_class.boxes_sigma), 0
                     )
                 ## change to new class number
                 pred_classes_all = torch.cat(
@@ -446,11 +461,28 @@ class FLtrainer(DefaultTrainer):
                 "tvmonitor",
             )
         elif cls == 8:
-            class_names = ('car','truck',  'rider', 'person', 'train', 'motorcycle', 'bicycle', 'bus')
+            class_names = (
+                "truck",
+                "car",
+                "rider",
+                "person",
+                "train",
+                "motorcycle",
+                "bicycle",
+                "bus",
+            )
         elif cls == 7:
-            class_names = ('car','truck',  'rider', 'person', 'motorcycle', 'bicycle', 'bus')
+            class_names = (
+                "truck",
+                "car",
+                "rider",
+                "person",
+                "motorcycle",
+                "bicycle",
+                "bus",
+            )
         elif cls == 5:
-            class_names = ('car','truck',  'rider', 'person', 'train')
+            class_names = ("truck", "car", "rider", "person", "train")
         else:
             raise RuntimeError
         return class_names
@@ -469,7 +501,6 @@ class FLtrainer(DefaultTrainer):
     # =====================================================
 
     def run_step(self):
-        DEBUG_MODE = False
         self._trainer.iter = self.iter
         assert self.model.training, "[PTrainer] model was changed to eval mode!"
         start = time.perf_counter()
@@ -514,18 +545,17 @@ class FLtrainer(DefaultTrainer):
             ]
 
             # ------------draw bb, need to scale pred_boxes-----------------
-            if DEBUG_MODE:
-                for bb_i in range(batch_size):
-                    filename = data[0][bb_i]['file_name']
-                    for i in range(num_teacher):
+            # for bb_i in range(batch_size):
+            #     filename = data[0][bb_i]['file_name']
+            #     for i in range(num_teacher):
 
-                        #bboxes_to_draw = scaling(roih_list[i][bb_i],1.7066)
-                        bboxes_to_draw = scaling(roih_list[i][bb_i],1.2)
+            #         bboxes_to_draw = scaling(roih_list[i][bb_i],1.7066)
+            #         #bboxes_to_draw = scaling(roih_list[i][bb_i],1.2)
 
-                        output_name = "output_images/{}_{}_{}".format(bb_i,i,os.path.basename(filename))
-                        classes_name = roih_list[i][bb_i].get('pred_classes')
-                        scores = roih_list[i][bb_i].get('scores')
-                        drawbb_text(filename, target_metadata, bboxes_to_draw,output_name, classes_name, scores, colors[i % len(colors)])
+            #         output_name = "output_images/{}_{}_{}".format(bb_i,i,os.path.basename(filename))
+            #         classes_name = roih_list[i][bb_i].get('pred_classes')
+            #         scores = roih_list[i][bb_i].get('scores')
+            #         drawbb_text(filename, target_metadata, bboxes_to_draw,output_name, classes_name, scores, colors[i % len(colors)])
 
             # if number of class of source dataset are different
             if self.cfg.FEDSET.DYNAMIC_CLASS is not None:
@@ -589,28 +619,9 @@ class FLtrainer(DefaultTrainer):
                                 )
                         num_source_contains_class = len(bbox_to_match)
 
-
-                        #---------------debug ---------------
-                        # write bbox_to_match to file with dynamic file name
-                        if DEBUG_MODE:
-                            file_name = f"output_images/bbox_to_match_{tgt_cls_idx}_batch_size_{batch_idx}.txt"
-                            with open(file_name, "w") as f:
-                                for bbox in bbox_to_match:
-                                    f.write(f"{bbox}\n")
-                    
                         # bb ensemble if more than 2 source contains class
                         if num_source_contains_class >= 2:
                             mt_src = self.get_match_array_nogt_batch(bbox_to_match)
-
-                            #---------------debug ---------------
-                            if DEBUG_MODE:
-                                file_name = f"output_images/mt_src{tgt_cls_idx}_batch_size_{batch_idx}.txt"
-                                with open(file_name, "w") as f:
-                                    for bbox in mt_src:
-                                        f.write(f"{bbox}\n")
-                            #---------------debug ---------------
-
-
                             try:
                                 new_idx = whohasclass_src_id.index(self.source_index)
                             except:
@@ -633,40 +644,20 @@ class FLtrainer(DefaultTrainer):
                     pesudo_proposals_roih_combined.append(
                         pesudo_proposals_roih_each_target
                     )
-
-                #---------------debug ---------------
-                if DEBUG_MODE:
-                    file_name = "output_images/pseudo_proposals_roih_combined.txt"
-                    with open(file_name, "w") as f:
-                        for proposals in pesudo_proposals_roih_combined:
-                            f.write(f"{proposals}\n")
-                #---------------debug ---------------
                 # print(pesudo_proposals_roih_combined,image_size)
                 # image_size = roih_list[0][0].image_size
                 pesudo_proposals_roih_combined_final = self.proposal_rebuilt(
                     pesudo_proposals_roih_combined, image_size
                 )
 
-                #---------------debug ---------------
-                if DEBUG_MODE:
-                    file_name = "output_images/pseudo_proposals_roih_combined_final.txt"
-                    with open(file_name, "w") as f:
-                        for proposals in pesudo_proposals_roih_combined_final:
-                            f.write(f"{proposals}\n")
-                    #---------------debug ---------------
+                # ------------draw bb no need to scale pseudo_boxes-----------------
+                # for bb_i in range(batch_size):
+                #     filename = data[0][bb_i]['file_name']
 
-                    # ------------draw bb no need to scale pseudo_boxes-----------------
-                    for bb_i in range(batch_size):
-                        filename = data[0][bb_i]['file_name']
+                #     bboxes_to_draw = pesudo_proposals_roih_combined_final[bb_i].get('pseudo_boxes')
 
-                        bboxes_to_draw = pesudo_proposals_roih_combined_final[bb_i].get('pseudo_boxes')
-                        
-                        output_name = "output_images/final_{}_{}".format(bb_i,os.path.basename(filename))
-                        #drawbb(filename, target_metadata, bboxes_to_draw,output_name)
-
-                        classes_name = pesudo_proposals_roih_combined_final[bb_i].get('pred_classes')
-                        #scores = pesudo_proposals_roih_combined_final[bb_i].get('scores_logists')
-                        drawbb_text(filename, target_metadata, bboxes_to_draw,output_name, classes_name,None)
+                #     output_name = "output_images/final_{}_{}".format(bb_i,os.path.basename(filename))
+                #     drawbb(filename, target_metadata, bboxes_to_draw,output_name)
             # original: single class (car)
             else:
 
@@ -827,8 +818,6 @@ class FLtrainer(DefaultTrainer):
             self.model_teacher.load_state_dict(rename_model_dict)
         else:
             self.model_teacher.load_state_dict(self.model.state_dict())
-
-# write a debug function to call get_match_array_nogt_batch, read input proposals_roih from text file
 
     def get_match_array_nogt_batch(self, proposals_roih):
         source_num = len(proposals_roih)

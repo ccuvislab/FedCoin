@@ -271,7 +271,7 @@ def drawimage_bb_text(image_tensor, bboxes_to_draw, output_name):#,classes, scor
     cv2.imwrite(output_name, img)    
 
 
-def drawbb_text(image_filename, target_metadata, bboxes_to_draw, output_name,classes, scores,drawcolor='b'):
+def drawbb_text(image_filename, target_metadata, bboxes_to_draw, output_name, classes, scores, drawcolor='b'):
     im = cv2.imread(image_filename, cv2.IMREAD_COLOR)[:, :, ::-1]
     v = Visualizer(
             im[:, :, ::-1], 
@@ -279,14 +279,17 @@ def drawbb_text(image_filename, target_metadata, bboxes_to_draw, output_name,cla
             scale=1,
             )
     for i, box in enumerate(bboxes_to_draw.to('cpu')):
-        scores_numpy = scores[i].to('cpu').numpy()
-        if scores_numpy>0.1:
-            v.draw_box(box,edge_color=drawcolor)
-            v.draw_text(str(classes[i].to('cpu').numpy())+" " +str(scores_numpy), tuple(box[:2].numpy()) ,color=drawcolor)
+        if scores is not None and scores[i] is not None:
+            score = scores[i].to('cpu').numpy()
+            v.draw_box(box, edge_color=drawcolor)
+            v.draw_text(str(classes[i].to('cpu').numpy()) + " " + str(score), tuple(box[:2].numpy()), color=drawcolor)
+        else:
+            v.draw_box(box, edge_color=drawcolor)
+            v.draw_text(str(classes[i].to('cpu').numpy()), tuple(box[:2].numpy()), color=drawcolor)
 
     v = v.get_output()
     img =  v.get_image()[:, :, ::-1]
-    cv2.imwrite(output_name, img)    
+    cv2.imwrite(output_name, img)
 
     
 

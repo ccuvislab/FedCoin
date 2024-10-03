@@ -47,7 +47,7 @@ MOON:
   CONTRASTIVE_MU: 0.5
   CONTRASTIVE_T: 0.5
   WANDB_Enable: True
-  WANDB_Project_Name: "fin04_skf2c_ma02"
+  WANDB_Project_Name: "mt08_ma_skf2c_moon_20240506"
 TEST:
   EVAL_PERIOD: 400
   EVALUATOR: "VOCeval"
@@ -55,6 +55,6 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/fin04_skf2c_ma02/"
+OUTPUT_DIR: "./output/mt08_ma_skf2c_moon_20240506/"
 
 
