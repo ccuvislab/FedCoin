@@ -2,19 +2,15 @@
 
 ![architecture](pic/architecture.png)
 
-This repo is the official implementation of ICIP paper "[A Privacy-preserving Approach for Multi-source Domain Adaptive Object Detection](https://ieeexplore.ieee.org/document/10222121/)" by Peggy Lu, Chia-Yung Jui, Jen-Hui Chuang.
+This repo is the official implementation of VCIP paper "[Fedcoin...](https://ieeexplore.ieee.org/document/xxxx/)" by WeiYu Chen, Peggy Lu, Vincent S. Tseng.
 
 ## Installation
 
-### Prerequisites
+This requirements is including the project Detectron2 [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md). We use version: ```detectron2==0.6```
+
 ```shell
-pip install -r requirements.txt
+conda install --file requirements.txt
 ```
-
-### Install Detectron2
-Follow the [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md) to install Detectron2. We use version: ```detectron2==0.5```
-
-## Usage
 
 ### Data Preparation
 Plz refer to [prepare_data.md](docs/prepare_data.md) for datasets preparation.
@@ -47,29 +43,11 @@ python train_net_multiTeacher.py --config-file configs/multi-teacher/skf2c_foggy
 ```
 
 
-## Main Results (to be modified)
-This code has been further improved,  achiving more superior adaptation performance than the results presented in the paper (about +1~2 mAP gains across the tasks, see exps logs for details).
-|Adaptation Tasks |Methods|Model Weights | mAP50                 | Log |
-| ---- | -------| ----- |------------------------------|------------------------------|
-|CitysScape2FoggyCityscape| PT (ours) | [Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing) | **31 &rArr; 47.1 (+16.1)**   | [Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing) |
-|CitysScape2BDD100k| PT (ours) | [Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing) | **26.9 &rArr; 34.9 (+8.0)**  |[Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing)  |
-|KITTI2CitysScape| PT (ours) | [Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing) | **46.4 &rArr; 60.2 (+13.8)** | [Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing) |
-|Sim10k2CitysScape|PT (ours) | [Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing) | **44.5 &rArr; 55.1 (+10.6)** | [Google Drive](https://drive.google.com/drive/folders/1rMXAaJpgOOHycnGhL2RwLJaz6dspmb74?usp=sharing) |
-
 
 ## Citation
 
 If you use this project in your research or wish to refer to the results published in the paper, please consider citing our paper:
 ```BibTeX
-@INPROCEEDINGS{10222121,
-  author={Lu, Peggy Joy and Jui, Chia-Yung and Chuang, Jen-Hui},
-  booktitle={2023 IEEE International Conference on Image Processing (ICIP)}, 
-  title={A Privacy-Preserving Approach for Multi-Source Domain Adaptive Object Detection}, 
-  year={2023},
-  volume={},
-  number={},
-  pages={1075-1079},
-  doi={10.1109/ICIP49359.2023.10222121}}
 ```
 
 ## License
