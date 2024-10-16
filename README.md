@@ -6,26 +6,100 @@ This repo is the official implementation of VCIP paper "[Federated Contrastive D
 
 # Installation
 
+You can choose one of the following methods to install Python-related packages in the files "requirements.txt" and "conda_environment.yaml."
+
+* requirements.txt
 This requirements is including the project Detectron2 [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md). We use version: ```detectron2==0.6```
 
 ```shell
 conda install --file requirements.txt
 ```
 
-### Data Preparation
-Plz refer to [prepare_data.md](docs/prepare_data.md) for datasets preparation.
+* conda_environment.yaml
 
-### Pretrained Model
+```shell
+conda env create -f conda_environment.yaml
+```
+
+# Environment Preparation
+
+### Dataset
+Plz refer to [prepare_data.md](docs/prepare_data.md) for datasets preparation.
+[dataset.tar (69GB)](https://cos.twcc.ai/t2datashare/ptmoon/dataset.tar)
+
+### Backbone Model 
 
 We used VGG16 pre-trained on ImageNet for all experiments. You can download it to ```/path/to/project```:
 
-- VGG16: [Dropbox](https://www.dropbox.com/s/s3brpk0bdq60nyb/vgg16_caffe.pth?dl=0), [VT Server](https://filebox.ece.vt.edu/~jw2yang/faster-rcnn/pretrained-base-models/vgg16_caffe.pth)
+- [VGG16.pth (0.5GB)](https://cos.twcc.ai/t2datashare/vgg16_caffe.pth)
+
+### Pretrained Model
+
+You can download and decompress the zip file to "output/" directory.
+- [pretrain_models.zip (9.5GB)](https://cos.twcc.ai/t2datashare/pretrain_model.zip)
 
 # Usage
-
+## Description
 ### Experiments Setup
 ![architecture](pic/experiments_setup.png)
 
+### config example
+```
+## 以下範例為 CK->B 
+_BASE_: "../Guassian-RCNN-VGG.yaml"
+MODEL:
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  GLOBAL_TRAINER: "sourceonly"
+  LOCAL_TRAINER: "sourceonly"
+SOLVER:
+  LR_SCHEDULER_NAME: "WarmupMultiStepLR"
+  STEPS: (4000,) # 每一round 跑多少 iteration 
+  MAX_ITER: 4000  # 與STEPS對齊
+  IMG_PER_BATCH_LABEL: 16
+  IMG_PER_BATCH_UNLABEL: 16
+  BASE_LR: 0.016
+  WARMUP_ITERS: 0
+  CHECKPOINT_PERIOD: 800   # 產生 checkpoint 的iteration 數
+  REFERENCE_BATCH_SIZE: 16
+# 這邊為新增控制項
+MOON:
+  CONTRASTIVE_Lcon_Enable: False  # 是否 contrastive learning
+  CONTRASTIVE_MU: 0.5  # contrastive learning 的參數 MU
+  CONTRASTIVE_T: 0.5  # contrastive learning 的參數 T
+  WANDB_Enable: True  # 是否使用wandb 紀錄
+  WANDB_Project_Name: "FedAvg_ck2b_multiclass_20240411"
+DATALOADER:
+  NUM_WORKERS: 2
+FEDSET:
+  DYNAMIC_CLASS: (8,5) # 對齊 DATASET_LIST 的類別數
+  THREAD: False
+  ROUND: 3  # 要跑幾輪
+  DATASET_LIST: ("VOC2007_citytrain","VOC2007_kitti5") # 資料集
+  BACKBONE_ONLY: True
+DATASETS:
+  CROSS_DATASET: True
+  TEST: ("VOC2007_bddval8",)  # 測試資料集
+UNSUPNET:
+  Trainer: "sourceonly"
+  TEACHER_UPDATE_ITER: 1
+  BURN_UP_STEP: 0
+  EMA_KEEP_RATE: 0.9996
+  SOURCE_LOSS_WEIGHT: 1.0
+  TARGET_UNSUP_LOSS_WEIGHT: 1.0
+  GUASSIAN: True
+  EFL: True
+  EFL_LAMBDA: [0.5,0.5]
+  TAU: [0.25,0.25]
+TEST:
+  EVAL_PERIOD: 400    # 跑多少 iteration 會 evaluate 一次
+  EVALUATOR: "VOCeval"
+INPUT:
+  MIN_SIZE_TRAIN: (600, )
+  MIN_SIZE_TEST: 600
+  RANDOM_FLIP: "horizontal"
+OUTPUT_DIR: "./output/FedAvg_ck2b_multiclass_20240411/"  # 輸出資料夾
+```
 
 ### main file
 * train_net_FedAvg.py
@@ -128,4 +202,4 @@ This project is released under the [Apache 2.0 license](./LICENSE). Other codes 
 
 ## Acknowledgement
 
-This project is built upon [Detectron2](https://github.com/facebookresearch/detectron2) and [Unbiased Teacher](https://github.com/facebookresearch/unbiased-teacher), and we'd like to appreciate for their excellent works.
+This project is built upon [Detectron2](https://github.com/facebookresearch/detectron2),  [Unbiased Teacher](https://github.com/facebookresearch/unbiased-teacher) and [MOON](https://github.com/QinbinLi/MOON), and we'd like to appreciate for their excellent works.
