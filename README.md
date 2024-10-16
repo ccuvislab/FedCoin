@@ -9,6 +9,7 @@ This repo is the official implementation of VCIP paper "[Federated Contrastive D
 You can choose one of the following methods to install Python-related packages in the files "requirements.txt" and "conda_environment.yaml."
 
 * requirements.txt
+
 This requirements is including the project Detectron2 [INSTALL.md](https://github.com/facebookresearch/detectron2/blob/master/INSTALL.md). We use version: ```detectron2==0.6```
 
 ```shell
@@ -25,7 +26,22 @@ conda env create -f conda_environment.yaml
 
 ### Dataset
 Plz refer to [prepare_data.md](docs/prepare_data.md) for datasets preparation.
-[dataset.tar (69GB)](https://cos.twcc.ai/t2datashare/ptmoon/dataset.tar)
+
+- [dataset.tar (69GB)](https://cos.twcc.ai/t2datashare/ptmoon/dataset.tar)
+
+```
+./data/
+├── VOC2007_bddtrain
+├── VOC2007_bddval 
+├── VOC2007_citytrain 
+├── VOC2007_cityval 
+├── VOC2007_foggytrain
+├── VOC2007_foggyval 
+├── kitti 
+├── multi-ck 
+├── multi-skf
+└── sim
+```
 
 ### Backbone Model 
 
@@ -38,13 +54,31 @@ We used VGG16 pre-trained on ImageNet for all experiments. You can download it t
 You can download and decompress the zip file to "output/" directory.
 - [pretrain_models.zip (9.5GB)](https://cos.twcc.ai/t2datashare/pretrain_model.zip)
 
+```
+pretrain_model/
+├── avg01_ck2b_so_20240411
+├── avg02_skf2c_so_20240408
+├── avg03_ck2b_moon_20240411
+├── avg03_dyn_ck2b_20240607
+├── avg03_inv_ck2b_20240517
+├── avg04_dyn_skf2c_20240611
+├── avg04_inv_skf2c_20240611
+├── avg04_skf2c_moon_20240411
+├── ma01_ck2b_cla8_20240501
+├── ma02_skf2c_cla8_20240411
+├── ma03_ck2b_cla8_20240422
+└── ma04_skf2c_cla8_20240411
+```
+you can also put pretrain_model/* to output/ to fix the config/*.yaml locations.
+
 # Usage
-## Description
+
+
 ### Experiments Setup
 ![architecture](pic/experiments_setup.png)
 
 ### config example
-```
+```python
 ## 以下範例為 CK->B 
 _BASE_: "../Guassian-RCNN-VGG.yaml"
 MODEL:
@@ -109,7 +143,7 @@ OUTPUT_DIR: "./output/FedAvg_ck2b_multiclass_20240411/"  # 輸出資料夾
 ## Train on Client
 ### FedAvg
 
-```
+```shell
 python train_net_FedAvg.py --config configs/multiclass/avg01_ck2b.yaml
 python train_net_FedAvg.py --config configs/multiclass/avg02_skf2c.yaml
 python train_net_FedAvg.py --config configs/multiclass/avg03_ck2b.yaml
@@ -118,7 +152,7 @@ python train_net_FedAvg.py --config configs/multiclass/avg04_skf2c.yaml
 
 ### FedMA  
 
-```
+```shell
 python train_net_FedMA.py --config configs/multiclass/ma01_ck2b.yaml
 python train_net_FedMA.py --config configs/multiclass/ma02_skf2c.yaml
 python train_net_FedMA.py --config configs/multiclass/ma03_ck2b.yaml
@@ -129,7 +163,7 @@ python train_net_FedMA.py --config configs/multiclass/ma04_skf2c.yaml
 ## Train on Server
 
 ### Multi Target （ 8 class ）
-```
+```shell
 python train_net_multiTeacher.py --config configs/multiclass/mt01_avg_ck2b_so.yaml
 python train_net_multiTeacher.py --config configs/multiclass/mt02_avg_skf2c_so.yaml
 python train_net_multiTeacher.py --config configs/multiclass/mt03_avg_ck2b_moon.yaml
@@ -142,7 +176,7 @@ python train_net_multiTeacher.py --config configs/multiclass/mt08_ma_skf2c_moon.
 
 
 ### MultiTeacher [ Ablation Study ] 
-```
+```shell
 python train_net_multiTeacher.py  --config configs/ablation/avg03_dyn_ck2b.yaml
 python train_net_multiTeacher.py  --config configs/ablation/avg03_inv_ck2b.yaml
 python train_net_multiTeacher.py  --config configs/ablation/avg04_dyn_skf2c.yaml
@@ -156,7 +190,7 @@ python train_net_multiTeacher.py  --config configs/ablation/mt04_inv_skf2c.yaml
 # Case Study 
 
 ### case 1 :  run fedAvg for  skf→c ,  and evaluation only for this model
-```
+```shell
 # train __your_FedAvg_skf2c_model, you need to modify avg02_skf2c.yaml
 python train_net_FedAvg.py --config configs/multiclass/avg02_skf2c.yaml
 # evaluate  __your_FedAvg_skf2c_model.pth
@@ -164,7 +198,7 @@ python train_net.py --config configs/evaluation/cityeval.yaml --eval-only MODEL.
 ```
 
 ### case 2 : run  fedMA to FedCoin with contrastive method for skf → c dataset
-```
+```shell
 # train on client by fedMA
 python train_net_FedMA.py --config configs/202405_multiclass/ma04_skf2c.yaml
 
@@ -173,7 +207,7 @@ python train_net_multiTeacher.py --config configs/multiclass/mt08_ma_skf2c_moon.
 ```
 
 ### case 3 : run fedAvg to FedCoin with ablation study for ck → b dataset
-```
+```shell
 ## inverse contrastive method
 # train on client by fedAvg with inverse contrastive method
 CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/ablation/avg03_inv_ck2b.yaml
