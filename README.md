@@ -21,108 +21,100 @@ We used VGG16 pre-trained on ImageNet for all experiments. You can download it t
 
 - VGG16: [Dropbox](https://www.dropbox.com/s/s3brpk0bdq60nyb/vgg16_caffe.pth?dl=0), [VT Server](https://filebox.ece.vt.edu/~jw2yang/faster-rcnn/pretrained-base-models/vgg16_caffe.pth)
 
-# Training
+# Usage
+
+### Experiments Setup
+![architecture](pic/experiments_setup.png)
+
 
 ### main file
 * train_net_FedAvg.py
 * train_net_FedMA.py
 * train_net_multiTeacher.py
 
-### Evaluation only
-```shell
-python train_net.py --config configs/moon/cityeval.yaml --eval-only MODEL.WEIGHTS output/FedAvg_skf2c_sourceonly_moon_20240123/FedAvg_0.pth 
+## Train on Client
+### FedAvg
+
 ```
-###  多gpu 跑法
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/moon/FedAvg_ck2b_sourceonly.yaml 
-```
-###  Multi-Teacher  20240611  
- * @g02 一次兩行在跑
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_multiclass/avg04_skf2c.yaml; CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_multiclass/mt04_avg_skf2c_moon.yaml
-```
- * @g03 分段跑
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg04_dyn_skf2c.yaml
-CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt04_dyn_skf2c.yaml
-```
- * @g02 一次兩行在跑
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg04_inv_skf2c.yaml; CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt04_inv_skf2c.yaml
-```
-### Dynamic Moon Pos-Nav in Multi-Teacher  20240607
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg03_dyn_ck2b.yaml
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg04_dyn_skf2c.yaml
-```
-### Inverse Moon Pos-Nav in Multi-Teacher Average  20240517
- * mt03 inverse moon [ mt03 w/ avg03 ]
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg03_inv_ck2b.yaml
-CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt03_inv_ck2b.yaml
-```
- * mt04 inverse moon [ mt04 w/ avg04 ]
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg04_inv_skf2c.yaml
-CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt04_inv_skf2c.yaml
-```
-## Multi-Teacher  20240506
-```shell
-python train_net_multiTeacher.py   --config configs/202405_multiclass/mt07_ma_ck2b_moon.yaml
-python train_net_multiTeacher.py   --config con
-```
-### AVG   20240411
- * Avg01 so ck -> b (so)
-```shell
-python train_net_FedAvg.py --config configs/202405_multiclass/avg01_ck2b.yaml
-```
- * Avg02 so skf -> c (so)
-```shell
-python train_net_FedAvg.py --config configs/202405_multiclass/avg02_skf2c.yaml
-```
- * Avg03 moon ck -> b (moon)
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_multiclass/avg03_ck2b.yaml
-```
- * Avg04 moon skf -> c (moon)
-```shell
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_multiclass/avg04_skf2c.yaml
-```
-### MA 20240411
- * MA01 moon ck -> b （moon）
-```shell
-python train_net_FedMA.py --config configs/202405_multiclass/ma01_ck2b.yaml
-```
- * MA02 moon skf -> c (moon)
-```shell
-python train_net_FedMA.py --config configs/202405_multiclass/ma02_skf2c.yaml
-```
- * MA03 so ck -> b  (so版)
-```shell
-python train_net_FedMA.py --config configs/202405_multiclass/ma03_ck2b.yaml 
-```
- * MA04 so skf -> c (so版)
-```shell
-python train_net_FedMA.py --config configs/202405_multiclass/ma04_skf2c.yaml # 
+python train_net_FedAvg.py --config configs/multiclass/avg01_ck2b.yaml
+python train_net_FedAvg.py --config configs/multiclass/avg02_skf2c.yaml
+python train_net_FedAvg.py --config configs/multiclass/avg03_ck2b.yaml
+python train_net_FedAvg.py --config configs/multiclass/avg04_skf2c.yaml
 ```
 
-### single class 20240331 
- * FedAvg sourceonly 
-```shell
-python train_net_FedAvg.py --config-file configs/FedAvg/FedAvg_skf2c_multiclass.yaml
+### FedMA  
+
 ```
- * FedAvg moon
-```shell
-python train_net_FedAvg.py --config-file configs/FedAvg/FedAvg_skf2c_multiclass_moon.yaml
+python train_net_FedMA.py --config configs/multiclass/ma01_ck2b.yaml
+python train_net_FedMA.py --config configs/multiclass/ma02_skf2c.yaml
+python train_net_FedMA.py --config configs/multiclass/ma03_ck2b.yaml
+python train_net_FedMA.py --config configs/multiclass/ma04_skf2c.yaml
 ```
- * FedMA sourceonly
-```shell
-python train_net_FedMA.py --config-file configs/FedMA/ck2b_FedMA_8cla.yaml
+
+
+## Train on Server
+
+### Multi Target （ 8 class ）
 ```
- * FedMA moon
-```shell
-python train_net_FedMA.py --config-file configs/FedMA/ck2b_FedMA_8cla_moon.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt01_avg_ck2b_so.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt02_avg_skf2c_so.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt03_avg_ck2b_moon.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt04_avg_skf2c_moon.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt05_ma_ck2b_so.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt06_ma_skf2c_so.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt07_ma_ck2b_moon.yaml
+python train_net_multiTeacher.py --config configs/multiclass/mt08_ma_skf2c_moon.yaml
 ```
+
+
+### MultiTeacher [ Ablation Study ] 
+```
+python train_net_multiTeacher.py  --config configs/ablation/avg03_dyn_ck2b.yaml
+python train_net_multiTeacher.py  --config configs/ablation/avg03_inv_ck2b.yaml
+python train_net_multiTeacher.py  --config configs/ablation/avg04_dyn_skf2c.yaml
+python train_net_multiTeacher.py  --config configs/ablation/avg04_inv_skf2c.yaml
+python train_net_multiTeacher.py  --config configs/ablation/mt03_dyn_ck2b.yaml
+python train_net_multiTeacher.py  --config configs/ablation/mt03_inv_ck2b.yaml
+python train_net_multiTeacher.py  --config configs/ablation/mt04_dyn_skf2c.yaml
+python train_net_multiTeacher.py  --config configs/ablation/mt04_inv_skf2c.yaml
+```
+
+# Case Study 
+
+### case 1 :  run fedAvg for  skf→c ,  and evaluation only for this model
+```
+# train __your_FedAvg_skf2c_model, you need to modify avg02_skf2c.yaml
+python train_net_FedAvg.py --config configs/multiclass/avg02_skf2c.yaml
+# evaluate  __your_FedAvg_skf2c_model.pth
+python train_net.py --config configs/evaluation/cityeval.yaml --eval-only MODEL.WEIGHTS output/__your_FedAvg_skf2c_model.pth 
+```
+
+### case 2 : run  fedMA to FedCoin with contrastive method for skf → c dataset
+```
+# train on client by fedMA
+python train_net_FedMA.py --config configs/202405_multiclass/ma04_skf2c.yaml
+
+# domain adapt on server with contrastive method
+python train_net_multiTeacher.py --config configs/multiclass/mt08_ma_skf2c_moon.yaml
+```
+
+### case 3 : run fedAvg to FedCoin with ablation study for ck → b dataset
+```
+## inverse contrastive method
+# train on client by fedAvg with inverse contrastive method
+CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/ablation/avg03_inv_ck2b.yaml
+# domain adapt on server with inverse contrastive method
+CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/ablation/mt03_inv_ck2b.yaml
+
+## dynamic contrastive method
+# train on client by fedAvg with dynamic contrastive method
+CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/ablation/avg03_dyn_ck2b.yaml
+# domain adapt on server with dynamic contrastive method
+CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/ablation/mt03_dyn_ck2b.yaml
+```
+
+
+# Related
 
 ## Citation
 
