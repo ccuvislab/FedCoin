@@ -150,6 +150,7 @@ python train_net_FedAvg.py --config configs/multiclass/avg03_ck2b.yaml
 python train_net_FedAvg.py --config configs/multiclass/avg04_skf2c.yaml
 ```
 
+## Train on Server
 ### FedMA  
 
 ```shell
@@ -159,8 +160,6 @@ python train_net_FedMA.py --config configs/multiclass/ma03_ck2b.yaml
 python train_net_FedMA.py --config configs/multiclass/ma04_skf2c.yaml
 ```
 
-
-## Train on Server
 
 ### Multi Target （ 8 class ）
 ```shell
