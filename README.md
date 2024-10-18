@@ -227,6 +227,12 @@ CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config
 
 If you use this project in your research or wish to refer to the results published in the paper, please consider citing our paper:
 ```BibTeX
+
+@INPROCEEDINGS{FedCoin,
+  author={Chen, Wei-Yu, Lu, Peggy Joy and Tseng, Vincent Shin-Mu},
+  booktitle={2024 IEEE International Conference on Visual Communications and Image Processing (VCIP)}, 
+  title={Federated Contrastive Domain Adaptation for Category-inconsistent Object Detection}, 
+  year={2024}}
 ```
 
 ## License
