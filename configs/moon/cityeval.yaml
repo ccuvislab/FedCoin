@@ -6,7 +6,7 @@ MODEL:
 DATALOADER:
   NUM_WORKERS: 2
 DATASETS:
-  TEST: ("VOC2007_cityval1",)
+  TEST: ("VOC2007_cityval",)
 UNSUPNET:
   # Trainer: "sourceonly"
   Trainer: "moon"

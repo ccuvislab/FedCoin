@@ -16,7 +16,7 @@ import pandas as pd
 import cv2
 
 
-from Nb_utils import drawbb, scaling, drawbb_text, drawimage_bb_text
+#from Nb_utils import drawbb, scaling, drawbb_text, drawimage_bb_text
 import os
 import time
 import logging
@@ -514,18 +514,18 @@ class FLtrainer(DefaultTrainer):
             ]
 
             # ------------draw bb, need to scale pred_boxes-----------------
-            if DEBUG_MODE:
-                for bb_i in range(batch_size):
-                    filename = data[0][bb_i]['file_name']
-                    for i in range(num_teacher):
+            # if DEBUG_MODE:
+            #     for bb_i in range(batch_size):
+            #         filename = data[0][bb_i]['file_name']
+            #         for i in range(num_teacher):
 
-                        #bboxes_to_draw = scaling(roih_list[i][bb_i],1.7066)
-                        bboxes_to_draw = scaling(roih_list[i][bb_i],1.2)
+            #             #bboxes_to_draw = scaling(roih_list[i][bb_i],1.7066)
+            #             bboxes_to_draw = scaling(roih_list[i][bb_i],1.2)
 
-                        output_name = "output_images/{}_{}_{}".format(bb_i,i,os.path.basename(filename))
-                        classes_name = roih_list[i][bb_i].get('pred_classes')
-                        scores = roih_list[i][bb_i].get('scores')
-                        drawbb_text(filename, target_metadata, bboxes_to_draw,output_name, classes_name, scores, colors[i % len(colors)])
+            #             output_name = "output_images/{}_{}_{}".format(bb_i,i,os.path.basename(filename))
+            #             classes_name = roih_list[i][bb_i].get('pred_classes')
+            #             scores = roih_list[i][bb_i].get('scores')
+            #             drawbb_text(filename, target_metadata, bboxes_to_draw,output_name, classes_name, scores, colors[i % len(colors)])
 
             # if number of class of source dataset are different
             if self.cfg.FEDSET.DYNAMIC_CLASS is not None:

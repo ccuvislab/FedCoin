@@ -14,8 +14,6 @@
 # limitations under the License.
 
 
-from collections import OrderedDict
-import torch
 import detectron2.utils.comm as comm
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.config import get_cfg
@@ -26,8 +24,7 @@ from detectron2.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 
 
 from pt.engine.FLtrainer import FLtrainer
-#from pt.engine.WCDtrainer import WCDtrainer
-from pt.engine.trainer_sourceonly import PTrainer_sourceonly
+
 # to register
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
 from pt.modeling.proposal_generator.rpn import GuassianRPN
@@ -39,7 +36,7 @@ from pt.modeling.anchor_generator import DifferentiableAnchorGenerator
 from shutil import copyfile
 
 from pt import add_config
-from FLpkg import FedUtils, add_config as FL_add_config
+from FLpkg import add_config as FL_add_config
 import os
 
 import logging
@@ -96,14 +93,7 @@ def main(args):
     elif cfg.UNSUPNET.Trainer == "frcnn":
         Trainer = FRCNNTrainer
     elif cfg.UNSUPNET.Trainer == "FLtrainer":
-        if cfg.MODEL.STUDENT_TRAINER == "sourceonly":
-            Trainer = PTrainer_sourceonly
-        else:
-            Trainer = FLtrainer
-    elif cfg.UNSUPNET.Trainer == "sourceonly":        
-        Trainer = PTrainer_sourceonly
-    elif cfg.UNSUPNET.Trainer == "WCDtrainer":
-        Trainer = WCDtrainer
+        Trainer = FLtrainer
     else:
         raise ValueError("Trainer Name is not found.")
 
@@ -118,38 +108,12 @@ def main(args):
                 ensem_ts_model, save_dir=cfg.OUTPUT_DIR
             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
             res = Trainer.test(cfg, ensem_ts_model.modelStudent)
-        elif cfg.UNSUPNET.Trainer in ["FLtrainer"]:
-            # same as loadSOmodel in FLtrainer
-            model_final_output = torch.load(cfg.MODEL.WEIGHTS)
-            model_with_student_prefix = {
-                k: v for k, v in model_final_output['model'].items() if k.startswith('modelStudent.')
-            }
-
-            # Remove 'modelStudent.' prefix from each key
-            model_wo_student_prefix = {
-                k.replace('modelStudent.', ''): v for k, v in model_with_student_prefix.items()
-            }
-            model_wo_student_prefix_ordered = OrderedDict(model_wo_student_prefix)
-            if cfg.FEDSET.DYNAMIC: 
-                
-                backbone_dim = FedUtils.get_backbone_shape(model_wo_student_prefix)
-    
-                cfg.defrost()
-                #cfg.MODEL.WEIGHTS = model_path                    
-                cfg.BACKBONE_DIM = backbone_dim        
-                cfg.freeze
-
-                model = Trainer.build_model(cfg,cfg.BACKBONE_DIM,False)
-            else:
-                model = Trainer.build_model(cfg)
-            
-            model.load_state_dict(model_wo_student_prefix_ordered, strict=False)
-            # DetectionCheckpointer(
-            #      model, save_dir=cfg.OUTPUT_DIR
-            # ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
-            
-            res = Trainer.test(cfg, model)
-        
+#         elif cfg.UNSUPNET.Trainer in ["pteval"]:
+#             model = Trainer.build_model(cfg)            
+#             DetectionCheckpointer(
+#                 model, save_dir=cfg.OUTPUT_DIR
+#             ).resume_or_load(cfg.MODEL.WEIGHTS, resume=args.resume)
+#             res = Trainer.test(cfg, model)
         else:
             model = Trainer.build_model(cfg)
             DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
