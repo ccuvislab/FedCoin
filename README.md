@@ -188,12 +188,11 @@ python train_net_multiTeacher.py  --config configs/ablation/mt04_inv_skf2c.yaml
 
 # Case Study 
 
-### case 1 :  run fedAvg for  skf→c ,  and evaluation only for this model
+### case 1 :  run fedAvg for  skf→c 
 ```shell
 # train __your_FedAvg_skf2c_model, you need to modify avg02_skf2c.yaml
 python train_net_FedAvg.py --config configs/multiclass/avg02_skf2c.yaml
-# evaluate  __your_FedAvg_skf2c_model.pth
-python train_net.py --config configs/evaluation/cityeval.yaml --eval-only MODEL.WEIGHTS output/__your_FedAvg_skf2c_model.pth 
+
 ```
 
 ### case 2 : run  fedMA to FedCoin with contrastive method for skf → c dataset
@@ -220,6 +219,15 @@ CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config config
 CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/ablation/mt03_dyn_ck2b.yaml
 ```
 
+### case 4: evaluation only
+```shell
+# evaluate  __your_FedAvg_skf2c_model.pth (trainer=source-only)
+python train_net_multiTeacher.py --config configs/evaluation/avg04_skf2c.yaml --eval-only MODEL.WEIGHTS output/avg04/avg04_skf2c_moon_20240611.pth 
+
+# evaluate  Fedcoin model_final.pth (trainer=FLtrainer)
+python train_net_multiTeacher.py --config configs/evaluation/mt04_avg_skf2c_moon.yaml --eval-only MODEL.WEIGHTS output/mt04/mt04_avg_skf2c_moon.pth
+
+```
 
 # Related
 
