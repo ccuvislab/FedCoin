@@ -52,7 +52,7 @@ We used VGG16 pre-trained on ImageNet for all experiments. You can download it t
 ### Pretrained Model
 
 You can download and decompress the zip file to "output/" directory.
-- [pretrain_models.zip (9.5GB)](https://cos.twcc.ai/t2datashare/pretrain_model.zip)
+- [pretrain_models.zip (19GB)](https://cos.twcc.ai/t2datashare/pretrain_model.zip)
 
 ```
 output/
