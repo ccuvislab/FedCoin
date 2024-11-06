@@ -55,19 +55,30 @@ You can download and decompress the zip file to "output/" directory.
 - [pretrain_models.zip (9.5GB)](https://cos.twcc.ai/t2datashare/pretrain_model.zip)
 
 ```
-pretrain_model/
-├── avg01_ck2b_so_20240411
-├── avg02_skf2c_so_20240408
-├── avg03_ck2b_moon_20240411
-├── avg03_dyn_ck2b_20240607
-├── avg03_inv_ck2b_20240517
-├── avg04_dyn_skf2c_20240611
-├── avg04_inv_skf2c_20240611
-├── avg04_skf2c_moon_20240411
-├── ma01_ck2b_cla8_20240501
-├── ma02_skf2c_cla8_20240411
-├── ma03_ck2b_cla8_20240422
-└── ma04_skf2c_cla8_20240411
+output/
+├── avg01_ck2b_so
+├── avg02_skf2c_so
+├── avg03_ck2b_moon
+├── avg03_dyn_ck2b
+├── avg03_inv_ck2b
+├── avg04_dyn_skf2c
+├── avg04_inv_skf2c
+├── avg04_skf2c_moon
+├── ma01_ck2b_cla8
+├── ma02_skf2c_cla8
+├── ma03_ck2b_cla8
+├── ma04_skf2c_cla8
+├── mt01_avg_ck2b
+├── mt02_avg_skf2c
+├── mt03_avg_ck2b
+├── mt03_dyn_ck2b
+├── mt03_inv_ck2b
+├── mt04_avg_skf2c
+├── mt04_dyn_skf2c
+├── mt04_inv_skf2c
+├── mt05_ma_ck2b
+├── mt06_ma_skf2c
+└── mt07_ma_ck2b
 ```
 you can also put pretrain_model/* to output/ to fix the config/*.yaml locations.
 
