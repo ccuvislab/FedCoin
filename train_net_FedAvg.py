@@ -24,7 +24,9 @@ from pt.engine.trainer import PTrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
 from pt.engine.trainer_moon import MoonTrainer
 
-# to register
+# to register resnet
+from pt.modeling.backbone.resnet import build_resnet50_backbone # waue
+# to register vgg
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
 from pt.modeling.proposal_generator.rpn import GuassianRPN
 from pt.modeling.roi_heads.roi_heads import GuassianROIHead

@@ -24,10 +24,13 @@ from detectron2.engine import DefaultTrainer
 from detectron2.evaluation import PascalVOCDetectionEvaluator, COCOEvaluator
 
 
-
 from pt.engine.FLtrainer import FLtrainer
 #from pt.engine.WCDtrainer import WCDtrainer
 from pt.engine.trainer_sourceonly import PTrainer_sourceonly
+
+# to register resnet
+from pt.modeling.backbone.resnet import build_resnet50_backbone # waue
+
 # to register
 from pt.modeling.meta_arch.rcnn import GuassianGeneralizedRCNN
 from pt.modeling.proposal_generator.rpn import GuassianRPN
