@@ -229,7 +229,7 @@ python train_net_multiTeacher.py --config configs/multiclass/mt08_ma_skf2c_moon.
 ### case 4 : run dynamic contrastive for ablation study for ck → b dataset
 
 ```shell
-```shell
+
 ## dynamic contrastive method
 # train on client by fedAvg with dynamic contrastive method
 CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/ablation/avg03_dyn_ck2b.yaml
