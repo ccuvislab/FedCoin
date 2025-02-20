@@ -199,14 +199,25 @@ python train_net_multiTeacher.py  --config configs/ablation/mt04_inv_skf2c.yaml
 
 # Case Study 
 
-### case 1 :  run fedAvg for  skf→c 
+###  ⭐case 1 : run fedAvg to FedCoin with ablation study for ck → b dataset
+```shell
+## inverse contrastive method
+# train on client by fedAvg with inverse contrastive method
+CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/ablation/avg03_inv_ck2b.yaml
+# domain adapt on server with inverse contrastive method
+CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/ablation/mt03_inv_ck2b.yaml
+
+```
+
+
+### case 2 :  run fedAvg for  skf→c 
 ```shell
 # train __your_FedAvg_skf2c_model, you need to modify avg02_skf2c.yaml
 python train_net_FedAvg.py --config configs/multiclass/avg02_skf2c.yaml
 
 ```
 
-### case 2 : run  fedMA to FedCoin with contrastive method for skf → c dataset
+### case 3 : run  fedMA to FedCoin with contrastive method for skf → c dataset
 ```shell
 # train on client by fedMA
 python train_net_FedMA.py --config configs/202405_multiclass/ma04_skf2c.yaml
@@ -215,14 +226,10 @@ python train_net_FedMA.py --config configs/202405_multiclass/ma04_skf2c.yaml
 python train_net_multiTeacher.py --config configs/multiclass/mt08_ma_skf2c_moon.yaml
 ```
 
-### case 3 : run fedAvg to FedCoin with ablation study for ck → b dataset
-```shell
-## inverse contrastive method
-# train on client by fedAvg with inverse contrastive method
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/ablation/avg03_inv_ck2b.yaml
-# domain adapt on server with inverse contrastive method
-CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/ablation/mt03_inv_ck2b.yaml
+### case 4 : run dynamic contrastive for ablation study for ck → b dataset
 
+```shell
+```shell
 ## dynamic contrastive method
 # train on client by fedAvg with dynamic contrastive method
 CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/ablation/avg03_dyn_ck2b.yaml
@@ -230,7 +237,7 @@ CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config config
 CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/ablation/mt03_dyn_ck2b.yaml
 ```
 
-### case 4: evaluation only
+### case 5: evaluation only
 ```shell
 # evaluate  __your_FedAvg_skf2c_model.pth (trainer=source-only)
 python train_net_multiTeacher.py --config configs/evaluation/avg04_skf2c.yaml --eval-only MODEL.WEIGHTS output/avg04/avg04_skf2c_moon_20240611.pth 
