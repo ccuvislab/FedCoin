@@ -6,32 +6,40 @@ pip install -r requirements.txt --upgrade --upgrade-strategy only-if-needed
 
 
 #####################
-#   單 GPU 訓練     #
+#    Quick Start    #
 #####################
-### * 用來驗證 SKF2C 資料集
-## 1. SKF2C 訓練 client 
-python train_net_FedAvg.py --config configs/202405_multiclass/avg04_skf2c.yaml;
+
+### 首先，先用訓練 CK2B 資料集，練習執行完整流程是否無誤
+## 1. CK2B 訓練 client 
+python train_net_FedAvg.py --config configs/202405_multiclass/avg01_ck2b.yaml;
 
 '''
-* 執行之後會產生 output/avg01_ck2b_so/，  當中包含 (FedAvg_2.pth, VOC2007_citytrain_2/ , VOC2007_kitti5_2/ )
-* 接著要修改 configs/202405_multiclass/mt04_avg_skf2c_moon.yaml， 把這三個參數帶入
+* 執行之後，假設output資料夾 為 output/avg01_ck2b_so/， 則該資料夾中包含 (FedAvg_2.pth, VOC2007_citytrain_2/ , VOC2007_kitti5_2/ )
+
+## 2. 修改 server 訓練 參數檔
+* 接著要修改 configs/202405_multiclass/mt01_avg_ck2b_so.yaml， 把這三個參數帶入
 *  TEACHER_PATH: ('output/avg01_ck2b_so/VOC2007_citytrain_2/model_final.pth',
 *                 'output/avg01_ck2b_so/VOC2007_kitti5_2/model_final.pth')
 *  STUDENT_PATH:  'output/avg01_ck2b_so/FedAvg_2.pth'
 '''
 
-## 2. SKF2C 訓練 server 
-python train_net_multiTeacher.py --config configs/202405_multiclass/mt04_avg_skf2c_moon.yaml
+## 3. CK2B 訓練 server 
+python train_net_multiTeacher.py --config configs/202405_multiclass/mt01_avg_ck2b_so.yaml
 
 '''
 * 執行之後會產生 ./output/mt01_avg_ck2b_so_20250422/ 內的 model_final.pth 是最後的模型
 '''
 
-### * 用來驗證 CK2B 資料集
-## 1. CK2B 訓練 client 
-python train_net_FedAvg.py --config configs/202405_multiclass/avg03_ck2b.yaml;
-## 2. CK2B 訓練 server 
-python train_net_multiTeacher.py --config configs/202405_inverse_moon/mt03_inv_ck2b.yaml
+#####################
+#   單 GPU 訓練     #
+#####################
+
+### * 同理，訓練 SKF2C 資料集
+## 1. SKF2C 訓練 client 
+python train_net_FedAvg.py --config configs/202405_multiclass/avg04_skf2c.yaml;
+
+## 2. SKF2C 訓練 server 
+python train_net_multiTeacher.py --config configs/202405_multiclass/mt04_avg_skf2c_moon.yaml
 
 
 #####################

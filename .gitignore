@@ -1,115 +1,69 @@
-mychage/*
-tmp/*
-data/*
-output/*
-models/*
-logs/*
-keep_experiments/*
+# 目錄型排除
+/data/
+/output/
+/models/
+/logs/
+/keep_experiments/
+/results/
+/output_/
+/wandb/
+/mychage/
+/tmp/
+/docs/
+/build/
+/dist/
+*.egg-info/
+
+# 檔案型排除
 *.pth
 *.pkl
-core*
-results/*
 *.tar
 *.csv
-output_/*
-wandb/*
-output
-wandb
-keep_experiments
-data
-## PyTorch
-.mypy_cache
-*.pyc
-*/*.pyc
-*/*.so*
-*/**/__pycache__
-*/**/*.dylib*
-*/**/*.pyc
-*/**/*.pyd
-*/**/*.so*
-*/**/**/*.pyc
-*/**/**/**/*.pyc
-*/**/**/**/**/*.pyc
-build/
-dist/
-
-# IPython notebook checkpoints
-.ipynb_checkpoints
-
-# Editor temporaries
+core*
 *.swn
 *.swo
 *.swp
 *.swm
 *~
-
-# macOS dir files
 .DS_Store
-
-
-# Ninja files
 .ninja_deps
 .ninja_log
 compile_commands.json
-*.egg-info/
-docs/source/scripts/activation_images/
 
-## General
-
-# Compiled Object files
+# 編譯產物
 *.slo
 *.lo
 *.o
 *.cuo
 *.obj
-
-# Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
-
-# Compiled Static libraries
 *.lai
 *.la
 *.a
 *.lib
-
-# Compiled protocol buffers
 *.pb.h
 *.pb.cc
 *_pb2.py
-
-# Compiled python
-*.pyc
-*.pyd
-
-# Compiled MATLAB
 *.mex*
 
-# IPython notebook checkpoints
-.ipynb_checkpoints
+# Python 相關
+*.py[cod]
+__pycache__/
+.mypy_cache/
+*.pyd
 
-# Editor temporaries
-*.swn
-*.swo
-*.swp
-*~
-
-# Sublime Text settings
+# 編輯器與IDE
 *.sublime-workspace
 *.sublime-project
-
-# Eclipse Project settings
 *.*project
-.settings
-
-# QtCreator files
+.settings/
 *.user
+.idea/
+.vscode/
+.vs/
 
-# PyCharm files
-.idea
-
-# Visual Studio Code files
-.vscode
-.vs
+# Notebook 暫存
+.ipynb_checkpoints/
 
