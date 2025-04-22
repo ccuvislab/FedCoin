@@ -1,22 +1,47 @@
 #### Installation ###
+
+conda create -n detectron2 python=3.8
 conda activate detectron2
-conda install --file requirements.txt
+pip install -r requirements.txt --upgrade --upgrade-strategy only-if-needed
 
 
-####  Multi-Teacher  20240611  
-# 由於事後發現skf2c moon 的config 都設定成 False 導致結果其實都是 so 而無法呈現 moon / dyn / inv 等差別，所以要補做以下實驗
+#####################
+#   單 GPU 訓練     #
+#####################
+### * 用來驗證 SKF2C 資料集
+## 1. SKF2C 訓練 client 
+python train_net_FedAvg.py --config configs/202405_multiclass/avg04_skf2c.yaml;
+## 2. SKF2C 訓練 server 
+python train_net_multiTeacher.py --config configs/202405_multiclass/mt04_avg_skf2c_moon.yaml
+
+
+### * 用來驗證 CK2B 資料集
+## 1. CK2B 訓練 client 
+python train_net_FedAvg.py --config configs/202405_multiclass/avg03_ck2b.yaml;
+## 2. CK2B 訓練 server 
+python train_net_multiTeacher.py --config configs/202405_inverse_moon/mt03_inv_ck2b.yaml
+
+
+#####################
+#   多 GPU 訓練     #
+#####################
+
+### 2gpu  Multi-Teacher  20240611  
 # @g02 一次兩行在跑
 CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_multiclass/avg04_skf2c.yaml; CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_multiclass/mt04_avg_skf2c_moon.yaml
 
 # @g03 分段跑
-CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg04_dyn_skf2c.yaml
-CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt04_dyn_skf2c.yaml
+CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg04_dyn_skf2c.yaml; CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt04_dyn_skf2c.yaml
 
 
 # @g02 一次兩行在跑
 CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config configs/202405_inverse_moon/avg04_inv_skf2c.yaml; CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt04_inv_skf2c.yaml
 
 
+
+#####################
+#  其他實驗組合紀錄 #
+#####################
 
 #### Dynamic Moon Pos-Nav in Multi-Teacher  20240607
 
@@ -26,7 +51,6 @@ CUDA_VISIBLE_DEVICES=0,1 python train_net_FedAvg.py --num-gpus 2 --config config
 #CUDA_VISIBLE_DEVICES=0,1 python train_net_multiTeacher.py  --num-gpus 2 --config configs/202405_inverse_moon/mt04_dyn_skf2c.yaml
 
 
-######################################
 ##### Inverse Moon Pos-Nav in Multi-Teacher Average  20240517
 
 # mt03 inverse moon [ mt03 w/ avg03 ]
