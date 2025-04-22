@@ -7,10 +7,10 @@ MODEL:
     NUM_CLASSES: 8
   TEACHER_TRAINER: "sourceonly"
   STUDENT_TRAINER: "sourceonly"
-  TEACHER_PATH: ('output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_sim1_12.pth',
-                 'output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_kitti5_12.pth',
-                 'output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_foggytrain_12.pth')
-  STUDENT_PATH:  'output/ma02_skf2c_cla8_20240411/FedMA_VOC2007_foggytrain_12.pth'
+  TEACHER_PATH: ('output/ma02_skf2c_cla8/FedMA_VOC2007_sim1_12.pth',
+                 'output/ma02_skf2c_cla8/FedMA_VOC2007_kitti5_12.pth',
+                 'output/ma02_skf2c_cla8/FedMA_VOC2007_foggytrain_12.pth')
+  STUDENT_PATH:  'output/ma02_skf2c_cla8/FedMA_VOC2007_foggytrain_12.pth'
 FEDSET:
   DYNAMIC: True
   DYNAMIC_CLASS: (1,5,8)
@@ -55,6 +55,6 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/mt08_ma_skf2c_moon_20240506/"
+OUTPUT_DIR: "./output/mt08_ma_skf2c_moon_20250422/"
 
 

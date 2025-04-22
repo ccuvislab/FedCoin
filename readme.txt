@@ -11,9 +11,21 @@ pip install -r requirements.txt --upgrade --upgrade-strategy only-if-needed
 ### * 用來驗證 SKF2C 資料集
 ## 1. SKF2C 訓練 client 
 python train_net_FedAvg.py --config configs/202405_multiclass/avg04_skf2c.yaml;
+
+'''
+* 執行之後會產生 output/avg01_ck2b_so/，  當中包含 (FedAvg_2.pth, VOC2007_citytrain_2/ , VOC2007_kitti5_2/ )
+* 接著要修改 configs/202405_multiclass/mt04_avg_skf2c_moon.yaml， 把這三個參數帶入
+*  TEACHER_PATH: ('output/avg01_ck2b_so/VOC2007_citytrain_2/model_final.pth',
+*                 'output/avg01_ck2b_so/VOC2007_kitti5_2/model_final.pth')
+*  STUDENT_PATH:  'output/avg01_ck2b_so/FedAvg_2.pth'
+'''
+
 ## 2. SKF2C 訓練 server 
 python train_net_multiTeacher.py --config configs/202405_multiclass/mt04_avg_skf2c_moon.yaml
 
+'''
+* 執行之後會產生 ./output/mt01_avg_ck2b_so_20250422/ 內的 model_final.pth 是最後的模型
+'''
 
 ### * 用來驗證 CK2B 資料集
 ## 1. CK2B 訓練 client 
@@ -116,4 +128,11 @@ python train_net_FedMA.py --config-file configs/FedMA/ck2b_FedMA_8cla.yaml
 ## FedMA moon
 python train_net_FedMA.py --config-file configs/FedMA/ck2b_FedMA_8cla_moon.yaml
 
+### git used 
+git pull
+git checkout 202409
 
+git add .
+git status
+git commit -m ""
+git push upstream 202409

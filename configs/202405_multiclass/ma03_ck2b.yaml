@@ -3,8 +3,8 @@ MODEL:
   BACKBONE:
     NAME: "build_vgg_backbone_dynamic"
   TEACHER_TRAINER: "sourceonly"
-  TEACHER_PATH: ('output/avg01_ck2b_so_20240411/VOC2007_kitti5_2/model_final.pth',
-                 'output/avg01_ck2b_so_20240411/VOC2007_citytrain_2/model_final.pth')
+  TEACHER_PATH: ('output/avg01_ck2b_so/VOC2007_kitti5_2/model_final.pth',
+                 'output/avg01_ck2b_so/VOC2007_citytrain_2/model_final.pth')
 FEDSET:
   THREAD: False
   DYNAMIC: False
@@ -54,4 +54,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/ma03_ck2b_cla8_20240501/"
+OUTPUT_DIR: "./output/ma03_ck2b_cla8_20250422/"

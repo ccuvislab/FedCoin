@@ -3,9 +3,9 @@ MODEL:
   BACKBONE:
     NAME: "build_vgg_backbone_dynamic"
   TEACHER_TRAINER: "sourceonly"
-  TEACHER_PATH: ('output/avg02_skf2c_so_20240408/VOC2007_foggytrain_2/model_final.pth',
-                 'output/avg02_skf2c_so_20240408/VOC2007_sim1_2/model_final.pth',
-                 'output/avg02_skf2c_so_20240408/VOC2007_kitti5_2/model_final.pth')
+  TEACHER_PATH: ('output/avg02_skf2c_so/VOC2007_foggytrain_2/model_final.pth',
+                 'output/avg02_skf2c_so/VOC2007_sim1_2/model_final.pth',
+                 'output/avg02_skf2c_so/VOC2007_kitti5_2/model_final.pth')
 FEDSET:
   THREAD: False
   DYNAMIC: False
@@ -56,4 +56,4 @@ INPUT:
   MIN_SIZE_TRAIN: (600, )
   MIN_SIZE_TEST: 600
   RANDOM_FLIP: "horizontal"
-OUTPUT_DIR: "./output/ma04_skf2c_cla8_20240501/"
+OUTPUT_DIR: "./output/ma04_skf2c_cla8_20250422/"
