@@ -1,0 +1,42 @@
+# Example configuration file for unified FedMA/FedAvg training
+# Add this to your config file to specify which algorithm to use
+
+# Algorithm selection: "fedma", "fedavg", or "fedprox"
+FEDSET:
+  ALGORITHM: "fedprox"  # or "fedma", "fedavg"
+  
+  # Common settings for both algorithms
+  DATASET_LIST: ["VOC2007_citytrain1", "VOC2007_kitti1"]
+  THREAD: false
+  ROUND: 5  # Only used for FedAvg
+  BACKBONE_ONLY: false  # Only used for FedAvg
+  ONLY_BACKBONE: false  # Only used for FedMA
+  
+  # FedMA specific settings
+  NUM_VGG_LAYERS: 12
+  VGG_CONV3_IDX: 6
+  DYNAMIC_CLASS: null  # or [20, 20] for different class numbers per client
+  
+  # FedAvg/FedProx specific settings
+  DYNAMIC: false
+  
+  # FedProx specific settings
+  MU: 0.01  # Proximal term coefficient (0.01-0.1 recommended)
+
+# Model settings
+MODEL:
+  # For FedMA
+  TEACHER_PATH: ["path/to/model1.pth", "path/to/model2.pth"]
+  TEACHER_TRAINER: "sourceonly"  # or "pt", "default"
+  
+  # For FedAvg
+  WEIGHTS: "path/to/initial_model.pth"
+
+# Trainer selection
+UNSUPNET:
+  Trainer: "pt"  # or "sourceonly", "moon"
+
+# MOON specific settings (for FedAvg with MOON trainer)
+MOON:
+  CONTRASTIVE_Lcon_Enable: false
+  WANDB_Enable: false

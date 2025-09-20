@@ -123,6 +123,7 @@ def register_all_pascal_voc(root):
         ("VOC2007_cityval", 'data/VOC2007_cityval', "val", 8),
         ("VOC2007_citytrain1", 'data/VOC2007_citytrain', "train", 1),
         ("VOC2007_citytrainsmall", 'data/VOC2007_citytrain', "train_small", 1),
+        ("VOC2007_citytrain8small", 'data/VOC2007_citytrain', "train_small", 8),
 
         ("VOC2007_citytrain5", 'data/VOC2007_citytrain', "train", 5),
         ("VOC2007_cityval1", 'data/VOC2007_cityval', "val", 1),
@@ -145,6 +146,7 @@ def register_all_pascal_voc(root):
         ("VOC2007_kitti1", 'data/kitti', "train", 1),
         ("VOC2007_kittismall", 'data/kitti', "train_small", 1),
         ("VOC2007_kitti5", 'data/kitti', "train", 5),
+        ("VOC2007_kitti5small", 'data/kitti', "train_small", 5),
         ("VOC2007_kitti8", 'data/kitti', "train", 8),
         ("VOC2007_sim1", 'data/sim', "train", 1),
         ("VOC2007_simsmall", 'data/sim', "train_small", 1),

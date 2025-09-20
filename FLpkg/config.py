@@ -39,6 +39,8 @@ def add_config(cfg):
     _C.FEDSET.DYNAMIC_CLASS = None
     _C.FEDSET.TARGET_CLASS = -1
     _C.FEDSET.BACKBONE_ONLY = False
+    _C.FEDSET.ALGORITHM = "fedavg"
+    _C.FEDSET.MU = 0.01
     
     # ---------------------------------------------------------------------------- #
     # Multi-teacher Settings
