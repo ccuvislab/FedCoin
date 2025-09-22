@@ -151,18 +151,21 @@ def register_all_pascal_voc(root):
         
         ("multi-ck", 'data/multi-ck', "train", 1),
         ("multi-skf", 'data/multi-skf', "train", 1),
+        
         #ck2b_bddfake#
         ("VOC2007_citytrain_bddfake", 'data/VOC2007_citytrain_bddfake', "train", 8),
         ("VOC2007_kitti5_bddfake", 'data/kitti_bddfake', "train", 5),
         ("VOC2007_bddval8_bddfake", 'data/VOC2007_bddval_bddfake', "val", 8),
 
         ("VOC2007_bddtrain1_bddfake", 'data/VOC2007_bddtrain_bddfake', "train", 1),
+        
         #ck2b_bddfake_rare#
         ("VOC2007_citytrain_bddfake_rare", 'data/VOC2007_citytrain_bddfake_rare', "train", 8),
         ("VOC2007_kitti5_bddfake_rare", 'data/kitti_bddfake_rare', "train", 5),
         ("VOC2007_bddval8_bddfake_rare", 'data/VOC2007_bddval_bddfake_rare', "val", 8),
 
         ("VOC2007_bddtrain1_bddfake_rare", 'data/VOC2007_bddtrain_bddfake_rare', "train", 1),
+        
         #skf2c_cityfake#
         ("VOC2007_foggytrain_cityfake", 'data/VOC2007_foggytrain_cityfake', "train", 8),
         ("VOC2007_sim1_cityfake", 'data/sim_cityfake', "train", 1),
@@ -171,6 +174,7 @@ def register_all_pascal_voc(root):
         
         ("VOC2007_citytrain_cityfake", 'data/VOC2007_citytrain_cityfake', "train", 8),
         ("VOC2007_bddval8small_cityfake", 'data/VOC2007_bddval_cityfake', "val_small", 8),
+        
         #skf2c_cityfake_rare#
         ("VOC2007_foggytrain_cityfake_rare", 'data/VOC2007_foggytrain_cityfake_rare', "train", 8),
         ("VOC2007_sim1_cityfake_rare", 'data/sim_cityfake_rare', "train", 1),
